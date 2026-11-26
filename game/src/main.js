@@ -1,6 +1,7 @@
 import * as THREE from "three";
 import { createFlightState, stepFlight } from "./flight-model.js";
 import { createInput } from "./input.js";
+import { createHud } from "./hud/hud.js";
 
 const canvas = document.getElementById("game");
 const renderer = new THREE.WebGLRenderer({ canvas, antialias: true });
@@ -104,10 +105,13 @@ scene.add(plane);
 
 const state = createFlightState({ y: 1.6 });
 const input = createInput(window);
+const hud = createHud(document);
 
-const hud = document.createElement("div");
-hud.id = "hud";
-document.body.appendChild(hud);
+const hintEl = document.createElement("div");
+hintEl.id = "controls-hint";
+hintEl.innerHTML =
+  "Shift + Ctrl throttle &middot; W/S up/down &middot; A/D roll &middot; Q/E rudder &middot; B brake &middot; G gear &middot; C camera &middot; P pause &middot; R restart &middot; 1/2/3 mission &middot; click to steer";
+document.body.appendChild(hintEl);
 
 function resize() {
   camera.aspect = window.innerWidth / window.innerHeight;
@@ -118,7 +122,9 @@ window.addEventListener("resize", resize);
 
 const clock = new THREE.Clock();
 let frames = 0;
+let elapsed = 0;
 let propAngle = 0;
+let paused = false;
 const camPos = new THREE.Vector3(0, 6, -14);
 const camLook = new THREE.Vector3(0, 2, 0);
 
@@ -126,9 +132,17 @@ function tick() {
   const dt = Math.min(clock.getDelta(), 0.05);
   const c = input.sample();
 
-  stepFlight(state, c, dt, function () { return 0; });
-  if (state.onGround && c.gearToggle) state.gearDown = !state.gearDown;
-  propAngle += (6 + state.throttle * 60) * dt;
+  if (c.pauseToggle) paused = !paused;
+
+  if (!paused) {
+    stepFlight(state, c, dt, function () { return 0; });
+    if (state.onGround && c.gearToggle) state.gearDown = !state.gearDown;
+    propAngle += (6 + state.throttle * 60) * dt;
+    elapsed += dt;
+  }
+
+  // Controls hint: first 10 seconds, and again on the pause screen.
+  hintEl.classList.toggle("show", !paused && elapsed < 10);
 
   plane.position.set(state.x, state.y, state.z);
   plane.rotation.order = "YXZ";
@@ -151,9 +165,8 @@ function tick() {
   camLook.lerp(look, 1 - Math.pow(0.0001, dt));
   camera.lookAt(camLook);
 
-  hud.textContent =
-    "SPD " + state.speed.toFixed(0) + " ALT " + state.y.toFixed(0) + " THR " + Math.round(state.throttle * 100) + "%" +
-    (state.onGround ? " GROUND" : "");
+  hud.update(state);
+  if (paused) hud.el.classList.add("paused"); else hud.el.classList.remove("paused");
 
   renderer.render(scene, camera);
   frames += 1;

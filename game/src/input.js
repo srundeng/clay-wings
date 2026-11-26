@@ -5,6 +5,7 @@
 const DEAD_ZONE = 0.06;
 
 export function createInput(window) {
+  const doc = window.document;
   const keys = new Set();
   const controls = {
     pitch: 0,
@@ -38,6 +39,14 @@ export function createInput(window) {
   function onKeyUp(event) {
     keys.delete(event.code);
   }
+  function clearKeys() {
+    keys.clear();
+    mouse.enabled = false;
+    controls.throttleDelta = 0;
+    controls.pitch = 0;
+    controls.roll = 0;
+    controls.yaw = 0;
+  }
   function onMouseMove(event) {
     if (!mouse.enabled) return;
     mouse.x = (event.clientX / window.innerWidth) * 2 - 1;
@@ -45,12 +54,21 @@ export function createInput(window) {
   }
   function onPointerDown() {
     mouse.enabled = true;
+    window.focus();
+    const el = doc.getElementById("game");
+    if (el && el.focus) { try { el.focus(); } catch (_e) { /* ignore */ } }
   }
 
+  // Listen on both window and document so keys register whichever has focus.
   window.addEventListener("keydown", onKeyDown);
   window.addEventListener("keyup", onKeyUp);
+  doc.addEventListener("keydown", onKeyDown);
+  doc.addEventListener("keyup", onKeyUp);
   window.addEventListener("mousemove", onMouseMove);
   window.addEventListener("pointerdown", onPointerDown);
+  doc.addEventListener("pointerdown", onPointerDown);
+  window.addEventListener("blur", clearKeys);
+  doc.addEventListener("blur", clearKeys);
 
   function dead(v) {
     return Math.abs(v) < DEAD_ZONE ? 0 : (v - Math.sign(v) * DEAD_ZONE) / (1 - DEAD_ZONE);
