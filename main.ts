@@ -7,7 +7,7 @@
 // clouds and stop-motion-style animation. Three missions, fuel and damage, and a HUD with altitude,
 // speed and heading. Screenshots go in screenshots/ (the first by name is the cover).
 //
-// Serve it locally with `node serve.ts`, then open http://localhost:8080.
+// Serve it locally with `node serve.ts`, then open localhost:8080 in a browser.
 // Outside the grader's container, MAKEFUN_OUTPUT_DIR stands in for /output:
 //   mkdir -p out && MAKEFUN_OUTPUT_DIR=out node main.ts
 

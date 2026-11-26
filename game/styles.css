@@ -25,3 +25,18 @@ html, body {
   clip-path: inset(50%);
   white-space: nowrap;
 }
+
+#hud {
+  position: fixed;
+  left: 16px;
+  bottom: 16px;
+  padding: 8px 14px;
+  font: 600 14px/1.4 ui-monospace, SFMono-Regular, Menlo, monospace;
+  letter-spacing: 0.04em;
+  color: #3a2318;
+  background: rgba(255, 228, 205, 0.82);
+  border-radius: 999px;
+  box-shadow: 0 2px 0 rgba(255, 255, 255, 0.6) inset, 0 3px 10px rgba(90, 40, 20, 0.18);
+  pointer-events: none;
+  user-select: none;
+}
