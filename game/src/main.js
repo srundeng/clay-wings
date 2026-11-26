@@ -110,7 +110,7 @@ const hud = createHud(document);
 const hintEl = document.createElement("div");
 hintEl.id = "controls-hint";
 hintEl.innerHTML =
-  "Shift + Ctrl throttle &middot; W/S up/down &middot; A/D roll &middot; Q/E rudder &middot; B brake &middot; G gear &middot; C camera &middot; P pause &middot; R restart &middot; 1/2/3 mission &middot; click to steer";
+  "Z/Shift throttle up &middot; X/Ctrl down &middot; W/S pitch &middot; A/D roll &middot; Q/E rudder &middot; B brake &middot; G gear &middot; C camera &middot; P pause &middot; R restart &middot; M mouse &middot; I invert &middot; T assist &middot; H hint &middot; click to steer";
 document.body.appendChild(hintEl);
 
 function resize() {
@@ -125,24 +125,50 @@ let frames = 0;
 let elapsed = 0;
 let propAngle = 0;
 let paused = false;
+let cameraMode = 0; // 0 chase, 1 cockpit
+let restarts = 0;
+let hintForced = false;
 const camPos = new THREE.Vector3(0, 6, -14);
 const camLook = new THREE.Vector3(0, 2, 0);
+
+function resetMission() {
+  const fresh = createFlightState({ y: 1.6 });
+  Object.assign(state, fresh);
+  restarts += 1;
+}
 
 function tick() {
   const dt = Math.min(clock.getDelta(), 0.05);
   const c = input.sample();
 
   if (c.pauseToggle) paused = !paused;
+  if (c.cameraToggle) cameraMode = 1 - cameraMode;
+  if (c.restart) resetMission();
+  if (c.hintToggle) hintForced = true;
 
   if (!paused) {
-    stepFlight(state, c, dt, function () { return 0; });
-    if (state.onGround && c.gearToggle) state.gearDown = !state.gearDown;
+    const flightC = {
+      pitch: c.pitch,
+      roll: c.roll,
+      yaw: c.yaw,
+      throttleDelta: (c.throttleUp ? 1 : 0) - (c.throttleDown ? 1 : 0),
+      brake: c.brake,
+    };
+    stepFlight(state, flightC, dt, function () { return 0; });
+    if (c.gearToggle) state.gearDown = !state.gearDown;
+    // Stability assist: airborne, no pitch/roll input, assist on.
+    if (!state.onGround && c.assist && c.pitch === 0 && c.roll === 0) {
+      state.roll *= Math.max(0, 1 - 2 * dt);
+      const lvl = 0.5 * dt;
+      if (Math.abs(state.pitch) <= lvl) state.pitch = 0;
+      else state.pitch -= Math.sign(state.pitch) * lvl;
+    }
     propAngle += (6 + state.throttle * 60) * dt;
     elapsed += dt;
   }
 
-  // Controls hint: first 10 seconds, and again on the pause screen.
-  hintEl.classList.toggle("show", !paused && elapsed < 10);
+  // Controls hint: first 10 seconds, when forced with H, and on the pause screen.
+  hintEl.classList.toggle("show", paused || hintForced || (!paused && elapsed < 10));
 
   plane.position.set(state.x, state.y, state.z);
   plane.rotation.order = "YXZ";
@@ -151,22 +177,28 @@ function tick() {
   plane.rotation.z = state.roll;
   prop.rotation.z = propAngle;
 
-  const back = 13;
-  const up = 4.5;
-  const desired = new THREE.Vector3(
-    state.x - Math.sin(state.heading) * Math.cos(state.pitch) * back,
-    state.y + up - Math.sin(state.pitch) * back,
-    state.z - Math.cos(state.heading) * Math.cos(state.pitch) * back,
-  );
-  camPos.lerp(desired, 1 - Math.pow(0.001, dt));
-  camera.position.copy(camPos);
-
-  const look = new THREE.Vector3(state.x, state.y + 1, state.z);
-  camLook.lerp(look, 1 - Math.pow(0.0001, dt));
-  camera.lookAt(camLook);
+  if (cameraMode === 0) {
+    const back = 13;
+    const up = 4.5;
+    const desired = new THREE.Vector3(
+      state.x - Math.sin(state.heading) * Math.cos(state.pitch) * back,
+      state.y + up - Math.sin(state.pitch) * back,
+      state.z - Math.cos(state.heading) * Math.cos(state.pitch) * back,
+    );
+    camPos.lerp(desired, 1 - Math.pow(0.001, dt));
+    camera.position.copy(camPos);
+    const look = new THREE.Vector3(state.x, state.y + 1, state.z);
+    camLook.lerp(look, 1 - Math.pow(0.0001, dt));
+    camera.lookAt(camLook);
+  } else {
+    camera.position.set(state.x, state.y + 1.1, state.z);
+    camera.lookAt(state.x + Math.sin(state.heading), state.y + 1.1 - Math.sin(state.pitch) * 5, state.z + Math.cos(state.heading));
+  }
 
   hud.update(state);
   if (paused) hud.el.classList.add("paused"); else hud.el.classList.remove("paused");
+
+  window.__DEBUG__ = { controls: c, state: state, cameraMode: cameraMode, restarts: restarts, keys: Array.from(input.keys) };
 
   renderer.render(scene, camera);
   frames += 1;
