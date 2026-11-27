@@ -49,9 +49,8 @@ export function createHud(doc) {
 
   const target = doc.createElement("div");
   target.id = "hud-target";
-  target.className = "hud-target";
-  target.innerHTML = '<span id="hud-target-arrow">&#9650;</span> <span id="hud-target-text"></span>';
-  el.appendChild(target);
+  target.innerHTML = '<div id="hud-arrow">&#9650;</div><div id="hud-target-dist"></div>';
+  doc.body.appendChild(target);
 
   const banner = doc.createElement("div");
   banner.id = "hud-banner";
@@ -92,8 +91,8 @@ export function createHud(doc) {
       document.getElementById("hud-objective").textContent = text;
     },
     setTarget(distance, relativeAngle) {
-      const arrow = document.getElementById("hud-target-arrow");
-      const label = document.getElementById("hud-target-text");
+      const arrow = document.getElementById("hud-arrow");
+      const label = document.getElementById("hud-target-dist");
       if (distance === null || distance === undefined) {
         label.textContent = "";
         arrow.style.opacity = "0";

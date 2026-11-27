@@ -144,17 +144,26 @@ body.cockpit #instruments {
   border-radius: 50%;
 }
 
-.hud-target {
-  grid-column: 1 / -1;
-  font: 700 18px/1.2 ui-monospace, monospace;
-  letter-spacing: 0.06em;
-  color: #ffe9a8;
+#hud-target {
+  position: fixed;
+  top: 10px;
+  left: 50%;
+  transform: translateX(-50%);
   text-align: center;
+  pointer-events: none;
+  user-select: none;
+  z-index: 7;
 }
-#hud-target-arrow {
-  display: inline-block;
-  color: #ff8a4c;
+#hud-arrow {
+  font: 700 34px/1 sans-serif;
+  color: #ff9b4c;
+  text-shadow: 0 2px 6px rgba(0, 0, 0, 0.6);
   transition: transform 0.12s linear;
+}
+#hud-target-dist {
+  font: 700 26px/1.2 ui-monospace, monospace;
+  color: #fff0c8;
+  text-shadow: 0 2px 6px rgba(0, 0, 0, 0.6);
 }
 .hud-banner {
   position: fixed;

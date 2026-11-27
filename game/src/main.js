@@ -142,7 +142,8 @@ function tick() {
 
   const agl = state.y - 1.6 - groundHeightAt(state.x, state.z);
   advanceMission(missionState, state, agl, landing !== null, landing);
-  rings.setActive(missionState.phase === "RINGS" ? missionState.ringIndex : -1);
+  const activeRingIndex = missionState.phase === "RINGS" ? missionState.ringIndex : (missionState.phase === "TAKEOFF" ? 0 : -1);
+  rings.update(activeRingIndex, elapsed);
   hud.setObjective(objectiveText(missionState));
   if (missionState.lastEvent === "ring") hud.flash("RING " + missionState.ringIndex + "/5");
   if (missionState.lastEvent === "complete") {
@@ -210,7 +211,7 @@ function tick() {
   }
   if (paused) hud.el.classList.add("paused"); else hud.el.classList.remove("paused");
 
-  window.__DEBUG__ = { controls: c, state: state, cameraMode: cameraMode, cockpit: cockpitMode, exteriorVisible: air.visible, near: camera.near, fov: camera.fov, hintShown: showHint, cloud: world.sky.cloudMat.color.getHex(), cloudEmissive: world.sky.cloudMat.emissiveIntensity, hemiGround: world.sky.hemi.groundColor.getHex(), phase: phase, mission: { phase: missionState.phase, ringIndex: missionState.ringIndex, complete: missionState.complete, failed: missionState.failed, stars: missionState.stars }, landing: landingText, lampPosts: !!scene.getObjectByName("lamp-posts"), restarts: restarts, keys: Array.from(input.keys), agl: agl, calls: renderer.info.render.calls };
+  window.__DEBUG__ = { controls: c, state: state, cameraMode: cameraMode, cockpit: cockpitMode, exteriorVisible: air.visible, near: camera.near, fov: camera.fov, hintShown: showHint, cloud: world.sky.cloudMat.color.getHex(), cloudEmissive: world.sky.cloudMat.emissiveIntensity, hemiGround: world.sky.hemi.groundColor.getHex(), phase: phase, mission: { phase: missionState.phase, ringIndex: missionState.ringIndex, complete: missionState.complete, failed: missionState.failed, stars: missionState.stars }, landing: landingText, ringInfo: rings.info, lampPosts: !!scene.getObjectByName("lamp-posts"), restarts: restarts, keys: Array.from(input.keys), agl: agl, calls: renderer.info.render.calls };
 
   renderer.render(scene, camera);
   frames += 1;
