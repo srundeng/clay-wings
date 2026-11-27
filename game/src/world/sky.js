@@ -47,8 +47,8 @@ export function buildSky(THREE, scene, doc) {
   scene.add(sun);
   scene.add(sun.target);
 
-  const cloudMat = new THREE.MeshStandardMaterial({ color: 0xfff2f4, roughness: 1, metalness: 0, emissive: 0x5a2f42, emissiveIntensity: 0.5 });
-  const puff = new THREE.SphereGeometry(1, 8, 8);
+  const cloudMat = new THREE.MeshStandardMaterial({ color: 0xfff3f6, roughness: 1, metalness: 0, emissive: 0x7a3f5a, emissiveIntensity: 0.65 });
+  const puff = new THREE.SphereGeometry(1, 16, 12);
   const clusters = 26;
   const perCluster = 5;
   const clouds = new THREE.InstancedMesh(puff, cloudMat, clusters * perCluster);
