@@ -79,6 +79,7 @@ let paused = false;
 let cameraMode = shotMode === "cockpit" ? 1 : 0;
 if (isShotScene) {
   setPhase("FLYING");
+  if (shotMode === "landing" || shotMode === "touchdown") input.controls.assist = false;
   if (shotMode === "chase-ring") {
     Object.assign(state, { x: 0, y: 80, z: 120, heading: 0, speed: 58, throttle: 0.55, fuel: 70, onGround: false, pitch: 0.02, roll: 0.04 });
     missionState.phase = "RINGS";
@@ -136,17 +137,13 @@ function tick() {
       yaw: c.yaw,
       throttleDelta: engineOut(state) ? -1 : (c.throttleUp ? 1 : 0) - (c.throttleDown ? 1 : 0),
       brake: c.brake,
+      assist: c.assist,
     };
     stepFlight(state, flightC, dt, groundHeightAt);
     if (engineOut(state)) state.throttle = 0;
     stepFuel(state, dt, state.ceilingFactor, getMission(missionState.id).fuelScale || 1);
     if (c.gearToggle) state.gearDown = !state.gearDown;
-    if (!state.onGround && c.assist && c.pitch === 0 && c.roll === 0 && shotMode !== "landing") {
-      state.roll *= Math.max(0, 1 - 2 * dt);
-      const lvl = 0.5 * dt;
-      if (Math.abs(state.pitch) <= lvl) state.pitch = 0;
-      else state.pitch -= Math.sign(state.pitch) * lvl;
-    }
+    if (!state.onGround && shotMode !== "landing") state.roll *= Math.max(0, 1 - 2 * dt);
     const onRunway = RUNWAYS.some((r) => Math.abs(state.x - r.cx) <= r.halfW && Math.abs(state.z - r.cz) <= r.halfL);
     const surface = onRunway ? "runway" : (groundBefore <= 0.5 ? "water" : "grass");
     if (!prevOnGround && state.onGround) {
@@ -239,6 +236,8 @@ function tick() {
   }
 
   hud.update(state, agl);
+  hud.setSwitches(c);
+  hud.setMouseMarker(c.mouseSteer && input.mouse.enabled, input.mouse.x, input.mouse.y);
   if (cockpitMode) {
     cockpit.update(propAngle);
     instruments.update(state, agl);

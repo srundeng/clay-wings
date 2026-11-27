@@ -4,7 +4,7 @@
 // while any key of an axis is held, the keyboard owns that axis. KeyM toggles
 // mouse steering, KeyI inverts pitch (keyboard and mouse).
 
-const DEAD_ZONE = 0.06;
+const DEAD_ZONE = 0.1;
 
 const GAME_KEYS = new Set([
   "KeyW", "KeyA", "KeyS", "KeyD", "KeyQ", "KeyE", "KeyZ", "KeyX", "KeyG",
@@ -39,7 +39,7 @@ export function createInput(window) {
   };
 
   const mouse = { enabled: false, x: 0, y: 0 };
-  let mouseSteerOn = true;
+  let mouseSteerOn = false;
   let invert = false;
 
   function onKeyDown(event) {

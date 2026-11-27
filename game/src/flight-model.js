@@ -93,6 +93,12 @@ export function stepFlight(state, controls, dt, groundHeightAt) {
     dv -= g.gravity * (sinPitch * g.pitchFactor + steep * g.climbBleed);
     const auth = authority(state.speed);
     state.pitch = clamp(state.pitch + (c.pitch ?? 0) * g.pitchRate * auth * step, -g.maxPitch, g.maxPitch);
+    if ((c.assist ?? false) && (c.pitch ?? 0) === 0) {
+      const level = g.assistRate * step;
+      if (Math.abs(state.pitch) <= level) state.pitch = 0;
+      else state.pitch -= Math.sign(state.pitch) * level;
+    }
+    dv -= (c.brake ? g.airBrake : 0);
     state.roll = clamp(state.roll + (c.roll ?? 0) * g.rollRate * auth * step, -1.5, 1.5);
     state.heading += (c.yaw ?? 0) * 0.5 * auth * step;
     state.heading += (g.gravity * Math.tan(state.roll)) / Math.max(state.speed, g.turnMinSpeed) * step;
@@ -100,7 +106,7 @@ export function stepFlight(state, controls, dt, groundHeightAt) {
     state.pitch = 0;
     state.roll = 0;
     state.heading += (c.yaw ?? 0) * g.groundSteerRate * step;
-    dv -= state.speed * g.groundFriction + (c.brake ? g.brakeFriction : 0);
+    dv -= state.speed * g.groundFriction + (c.brake && state.gearDown ? g.brakeFriction : 0);
   }
 
   state.speed = clamp(state.speed + dv * step, 0, g.maxSpeed);

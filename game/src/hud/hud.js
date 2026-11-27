@@ -47,6 +47,16 @@ export function createHud(doc) {
   objective.textContent = "Take off, then land on the runway";
   el.appendChild(objective);
 
+  const switches = doc.createElement("div");
+  switches.className = "hud-switches";
+  switches.innerHTML = '<span id="hud-mouse">MOUSE OFF</span> <span id="hud-assist">ASSIST ON</span> <span id="hud-brake">BRAKE</span>';
+  el.appendChild(switches);
+
+  const marker = doc.createElement("div");
+  marker.id = "mouse-crosshair";
+  marker.textContent = "+";
+  doc.body.appendChild(marker);
+
   const rings = doc.createElement("div");
   rings.id = "hud-rings";
   rings.className = "hud-rings";
@@ -92,6 +102,18 @@ export function createHud(doc) {
       if (!state.onGround && state.speed < FLIGHT.stallSpeed) warnings.push("STALL");
       warning.textContent = warnings.join("  ");
       this.renderCompass(hdg);
+    },
+    setSwitches(controls) {
+      document.getElementById("hud-mouse").textContent = controls.mouseSteer ? "MOUSE ON" : "MOUSE OFF";
+      document.getElementById("hud-assist").textContent = controls.assist ? "ASSIST ON" : "ASSIST OFF";
+      const brake = document.getElementById("hud-brake");
+      brake.textContent = "BRAKE";
+      brake.classList.toggle("on", !!controls.brake);
+    },
+    setMouseMarker(enabled, x, y) {
+      const m = document.getElementById("mouse-crosshair");
+      m.style.display = enabled ? "block" : "none";
+      if (enabled) m.style.transform = "translate(-50%, -50%) translate(" + Math.round(x * 120) + "px," + Math.round(y * 80) + "px)";
     },
     setRingCount(text) {
       document.getElementById("hud-rings").textContent = text;

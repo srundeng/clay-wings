@@ -31,7 +31,11 @@ export const FLIGHT = {
   throttleRate: 0.8,
   // Ground rolling drag (per second) and brake deceleration.
   groundFriction: 0.15,
-  brakeFriction: 8,
+  brakeFriction: 6,
+  // Airbrake deceleration while B is held in flight (m/s^2).
+  airBrake: 4,
+  // Stability assist pitch-levelling rate (rad/s) with no pitch input.
+  assistRate: 0.6,
   // Pitch is limited to +/-50 degrees; the plane cannot point straight up.
   maxPitch: 50 * Math.PI / 180,
   // Extra gravity bleed ramps in above this pitch (20 degrees).

@@ -82,13 +82,12 @@ html, body {
 
 #controls-hint {
   position: fixed;
-  left: 50%;
-  bottom: 18px;
-  transform: translateX(-50%);
-  padding: 8px 16px;
-  max-width: 86vw;
-  font: 600 13px/1.5 ui-monospace, SFMono-Regular, Menlo, monospace;
-  text-align: center;
+  right: 14px;
+  top: 14px;
+  padding: 8px 12px;
+  max-width: min(420px, 40vw);
+  font: 600 12px/1.45 ui-monospace, SFMono-Regular, Menlo, monospace;
+  text-align: left;
   color: #fff7ec;
   background: rgba(40, 24, 16, 0.62);
   border-radius: 12px;
@@ -291,5 +290,34 @@ body.cockpit #instruments {
   z-index: 5;
 }
 #controls-hint {
+  z-index: 8;
+}
+
+.hud-switches {
+  grid-column: 1 / -1;
+  font: 700 14px/1.2 ui-monospace, monospace;
+  letter-spacing: 0.06em;
+  color: #ffd9a8;
+  text-align: center;
+}
+#hud-brake {
+  color: #8a7d72;
+}
+#hud-brake.on {
+  color: #ff6b52;
+}
+#mouse-crosshair {
+  display: none;
+  position: fixed;
+  left: 50%;
+  top: 50%;
+  width: 18px;
+  height: 18px;
+  line-height: 16px;
+  text-align: center;
+  font: 700 18px/16px ui-monospace, monospace;
+  color: #ffddaa;
+  text-shadow: 0 1px 3px rgba(0, 0, 0, 0.8);
+  pointer-events: none;
   z-index: 8;
 }
