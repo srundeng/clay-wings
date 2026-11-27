@@ -65,9 +65,9 @@ export function groundHeightAt(x, z) {
 
 // Colour by elevation and slope, as clay-looking vertex colours.
 function colorFor(h, slope, out) {
-  const sand = [0.86, 0.76, 0.52];
-  const grass = [0.36, 0.55, 0.28];
-  const rock = [0.52, 0.47, 0.42];
+  const sand = [0.9, 0.8, 0.6];
+  const grass = [0.52, 0.66, 0.4];
+  const rock = [0.64, 0.56, 0.52];
   const snow = [0.93, 0.93, 0.95];
   let c;
   if (h < 2.5) c = sand;

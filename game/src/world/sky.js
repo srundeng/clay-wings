@@ -4,7 +4,7 @@ import { getMission } from "../missions.js";
 
 export function buildSky(THREE, scene, doc) {
   scene.background = new THREE.Color(0xd63a9a);
-  scene.fog = new THREE.Fog(new THREE.Color(0xd86aa8), 400, 1500);
+  scene.fog = new THREE.Fog(new THREE.Color(0xd99a9a), 700, 2600);
 
   const domeCanvas = doc.createElement("canvas");
   domeCanvas.width = 4;
@@ -86,7 +86,7 @@ export function buildSky(THREE, scene, doc) {
   scene.add(clouds);
   return {
     sun, clouds, cloudMat, hemi, sunDisc,
-    info: { fog: scene.fog.color.getHex(), hemiSky: hemi.color.getHex(), hemiGround: hemi.groundColor.getHex(), sun: sun.color.getHex(), disc: sunDisc.material.color.getHex(), shadowSize: sun.shadow.mapSize.x },
+    info: { fog: scene.fog.color.getHex(), fogNear: scene.fog.near, fogFar: scene.fog.far, hemiSky: hemi.color.getHex(), hemiGround: hemi.groundColor.getHex(), sun: sun.color.getHex(), disc: sunDisc.material.color.getHex(), shadowSize: sun.shadow.mapSize.x },
     updateClouds(t) {
       clouds.rotation.y = t * 0.0006;
     },
@@ -94,6 +94,8 @@ export function buildSky(THREE, scene, doc) {
       sun.position.set(x + 300, y + 180, z + 200);
       sun.target.position.set(x, y, z);
       sun.target.updateMatrixWorld();
+      sunDisc.position.set(x + 1200, y + 130, z + 1450);
+      sunDisc.lookAt(x, y + 130, z);
     },
     cloudInfo: { count: clusters * perCluster, maxScale, minPathDistance } };
 }

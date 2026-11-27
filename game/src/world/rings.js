@@ -47,7 +47,7 @@ export function buildRings(THREE, missionId, mat) {
     reset() {
       for (let i = 0; i < passAt.length; i += 1) passAt[i] = null;
     },
-    update(index, time) {
+    update(index, time, hideNext) {
       for (let i = 0; i < entries.length; i += 1) {
         const e = entries[i];
         const passed = index === -1 || i < index;
@@ -72,8 +72,12 @@ export function buildRings(THREE, missionId, mat) {
           stateInfo[i].color = e.thick.material.color.getHex();
         } else {
           e.thick.visible = false;
-          e.thin.visible = true;
+          e.thin.visible = i !== index + 1 || !hideNext;
           e.thin.material.opacity = i === index + 1 ? 0.75 : 0.45;
+          if (!e.thin.visible) {
+            stateInfo[i].visible = false;
+            continue;
+          }
           stateInfo[i].visible = true;
           stateInfo[i].opacity = e.thin.material.opacity;
           stateInfo[i].tube = THIN_TUBE;
