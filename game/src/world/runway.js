@@ -6,12 +6,19 @@ import { RUNWAYS } from "./terrain.js";
 export function buildRunways(THREE, mat) {
   const group = new THREE.Group();
   group.name = "runways";
+  const info = [];
 
   for (let i = 0; i < RUNWAYS.length; i += 1) {
     const r = RUNWAYS[i];
-    const y = r.flat + 0.06;
+    const y = r.flat + 0.15;
 
-    const surface = new THREE.Mesh(new THREE.PlaneGeometry(r.halfW * 2, r.halfL * 2), mat(0x4b4f52));
+    const shoulder = new THREE.Mesh(new THREE.PlaneGeometry((r.halfW + 4) * 2, (r.halfL + 2) * 2), mat(0xd9c7a8));
+    shoulder.rotation.x = -Math.PI / 2;
+    shoulder.position.set(r.cx, r.flat + 0.1, r.cz);
+    shoulder.receiveShadow = true;
+    group.add(shoulder);
+
+    const surface = new THREE.Mesh(new THREE.PlaneGeometry(r.halfW * 2, r.halfL * 2), mat(0x3d4246));
     surface.rotation.x = -Math.PI / 2;
     surface.position.set(r.cx, y, r.cz);
     surface.receiveShadow = true;
@@ -52,6 +59,8 @@ export function buildRunways(THREE, mat) {
     sock.rotation.z = Math.PI / 2;
     sock.position.set(r.cx + r.halfW + 7.6, y + 5.6, r.cz - r.halfL + 10);
     group.add(sock);
+    info.push({ flat: r.flat, surfaceY: y, halfW: r.halfW, halfL: r.halfL, shoulderW: r.halfW + 4 });
   }
+  group.userData.runwayInfo = info;
   return group;
 }

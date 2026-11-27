@@ -39,7 +39,8 @@ export function assembleScene(THREE, scene, doc, seed) {
   const terrain = buildTerrainMesh(THREE);
   scene.add(terrain);
   scene.add(buildWater(THREE, matFactory));
-  scene.add(buildRunways(THREE, matFactory));
+  const runways = buildRunways(THREE, matFactory);
+  scene.add(runways);
   scene.add(buildProps(THREE, matFactory, makeRandom(seed || 7)));
 
   const aircraft = buildAircraft(THREE, matFactory);
@@ -48,6 +49,7 @@ export function assembleScene(THREE, scene, doc, seed) {
   return {
     terrain,
     sky,
+    runwayInfo: runways.userData.runwayInfo,
     aircraft: aircraft.group,
     prop: aircraft.prop,
     wheels: aircraft.wheels,
