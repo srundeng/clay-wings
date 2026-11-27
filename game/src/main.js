@@ -15,6 +15,8 @@ import { RUNWAYS } from "./world/terrain.js";
 import { applyShotScene, seedChaseCamera } from "./shots.js";
 import { projectTargets } from "./render/projection.js";
 import { updateCameras } from "./render/cameras.js";
+import { createAudio } from "./audio.js";
+import { createHint } from "./hud/hint.js";
 
 const canvas = document.getElementById("game");
 const renderer = new THREE.WebGLRenderer({ canvas, antialias: true, preserveDrawingBuffer: true });
@@ -42,8 +44,7 @@ const state = createFlightState({ x: 0, y: startY, z: 0, heading: 0 });
 const input = createInput(window);
 const hud = createHud(document);
 const rings = buildRings(THREE, world.mat);
-rings.setMission("first-flight");
-scene.add(rings.group);
+rings.setMission("first-flight"); scene.add(rings.group);
 const screens = createScreens(document);
 let missionState = createMissionState("first-flight");
 let phase = "TITLE";
@@ -59,11 +60,8 @@ function setPhase(next, data) {
   else screens.hide();
 }
 
-const hintEl = document.createElement("div");
-hintEl.id = "controls-hint";
-hintEl.innerHTML =
-  "Z/Shift throttle up &middot; X/Ctrl down &middot; W/S pitch &middot; A/D roll &middot; Q/E rudder &middot; B brake &middot; G gear &middot; C camera &middot; P pause &middot; R restart &middot; M mouse &middot; I invert &middot; T assist &middot; H hint &middot; click to steer";
-if (!isShotScene) document.body.appendChild(hintEl);
+const hintEl = createHint(document, isShotScene);
+const audio = createAudio(window);
 
 function resize() {
   camera.aspect = window.innerWidth / window.innerHeight;
@@ -134,7 +132,7 @@ function tick() {
   if (c.drop && phase === "FLYING") {
     const result = dropParcel(missionState, state);
     hud.flash(result.text);
-    if (result.ok) hud.setObjective(objectiveText(missionState));
+    if (result.ok) { hud.setObjective(objectiveText(missionState)); audio.drop(); }
   }
   if (c.pauseToggle) paused = !paused;
   if (c.cameraToggle) cameraMode = 1 - cameraMode;
@@ -169,7 +167,8 @@ function tick() {
       landingText = landing.text;
       damageHull(state, landing.damage);
       hud.flash(landing.text);
-      if (crashed(state)) setPhase("CRASH", { detail: landing.text });
+      audio.touchdown(landing.rating);
+      if (crashed(state)) { setPhase("CRASH", { detail: landing.text }); audio.crash(); }
     }
     prevOnGround = state.onGround;
     elapsed += dt;
@@ -200,7 +199,8 @@ function tick() {
   } else hideNextRing = false;
   rings.update(activeRingIndex, elapsed, hideNextRing);
   hud.setObjective(objectiveText(missionState));
-  if (missionState.lastEvent === "ring") hud.flash("RING " + missionState.ringIndex + "/5");
+  if (missionState.lastEvent === "ring") { hud.flash("RING " + missionState.ringIndex + "/" + getMission(missionState.id).rings.length); audio.ring(); }
+  if (missionState.lastEvent === "beacon") audio.beacon();
   if (missionState.lastEvent === "complete") {
     setPhase("RESULT", { detail: landingText + " | " + missionState.stars + " stars" });
     hud.flash("");
@@ -231,6 +231,7 @@ function tick() {
   updateCameras(THREE, camera, cameraMode, state, camPos, camLook, EYE, COCKPIT_YAW, air, dt, groundHeightAt, shotMode);
 
   hud.update(state, agl);
+  audio.update(state);
   hud.setSwitches(c);
   hud.setMouseMarker(c.mouseSteer && input.mouse.enabled, input.mouse.x, input.mouse.y);
   if (cockpitMode) {
@@ -239,7 +240,7 @@ function tick() {
   }
   if (paused) hud.el.classList.add("paused"); else hud.el.classList.remove("paused");
 
-  window.__DEBUG__ = { controls: c, state: state, cameraMode: cameraMode, cockpit: cockpitMode, exteriorVisible: air.visible, near: camera.near, fov: camera.fov, hintShown: showHint, cloud: world.sky.cloudMat.color.getHex(), cloudEmissive: world.sky.cloudMat.emissiveIntensity, cloudInfo: world.sky.cloudInfo, hemiGround: world.sky.hemi.groundColor.getHex(), phase: phase, mission: { id: missionState.id, dropped: missionState.dropped, visited: missionState.visited.length, phase: missionState.phase, ringIndex: missionState.ringIndex, complete: missionState.complete, failed: missionState.failed, stars: missionState.stars }, landing: landingText, clayInfo: world.clayInfo, skyInfo: world.skyInfo, stopMotion: { fps: STOP_MOTION.fps, steps: qSteps, time: quantizedTime, propAngle: propAngle }, runwayInfo: world.runwayInfo, ringStates: rings.stateInfo, ringInfo: rings.info(), ringScreen: ringScreen, lampPosts: !!scene.getObjectByName("lamp-posts"), restarts: restarts, keys: Array.from(input.keys), agl: agl, calls: renderer.info.render.calls };
+  window.__DEBUG__ = { controls: c, state: state, cameraMode: cameraMode, cockpit: cockpitMode, exteriorVisible: air.visible, near: camera.near, fov: camera.fov, hintShown: showHint, cloud: world.sky.cloudMat.color.getHex(), cloudEmissive: world.sky.cloudMat.emissiveIntensity, cloudInfo: world.sky.cloudInfo, hemiGround: world.sky.hemi.groundColor.getHex(), audio: audio.ready(), phase: phase, mission: { id: missionState.id, dropped: missionState.dropped, visited: missionState.visited.length, phase: missionState.phase, ringIndex: missionState.ringIndex, complete: missionState.complete, failed: missionState.failed, stars: missionState.stars }, landing: landingText, clayInfo: world.clayInfo, skyInfo: world.skyInfo, stopMotion: { fps: STOP_MOTION.fps, steps: qSteps, time: quantizedTime, propAngle: propAngle }, runwayInfo: world.runwayInfo, ringStates: rings.stateInfo, ringInfo: rings.info(), ringScreen: ringScreen, lampPosts: !!scene.getObjectByName("lamp-posts"), restarts: restarts, keys: Array.from(input.keys), agl: agl, calls: renderer.info.render.calls };
 
   renderer.render(scene, camera);
   frames += 1;
