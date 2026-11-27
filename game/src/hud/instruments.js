@@ -103,22 +103,30 @@ export function createInstruments(doc) {
       const cmp = canvases["inst-compass"].getContext("2d");
       face(cmp, "#8a5a3c");
       cmp.save();
+      cmp.beginPath();
+      cmp.arc(80, 80, 66, 0, Math.PI * 2);
+      cmp.clip();
       cmp.translate(80, 80);
       cmp.rotate(-state.heading);
       cmp.textAlign = "center";
-      cmp.font = "bold 20px sans-serif";
+      cmp.font = "bold 18px sans-serif";
       cmp.fillStyle = "#59402e";
       for (const [label, angle] of [["N", 0], ["E", Math.PI / 2], ["S", Math.PI], ["W", Math.PI * 1.5]]) {
-        cmp.fillText(label, Math.sin(angle) * 52, -Math.cos(angle) * 52 + 6);
+        cmp.fillText(label, Math.sin(angle) * 42, -Math.cos(angle) * 42 + 6);
       }
       cmp.restore();
       cmp.fillStyle = "#d9745a";
       cmp.beginPath();
       cmp.arc(80, 80, 9, 0, Math.PI * 2);
       cmp.fill();
-      cmp.fillStyle = "#59402e";
-      cmp.font = "bold 15px sans-serif";
-      cmp.fillText(String(((Math.round(state.heading * 180 / Math.PI) % 360) + 360) % 360) + "\u00b0", 80, 130);
+      cmp.fillStyle = "rgba(28,20,14,0.88)";
+      cmp.beginPath();
+      cmp.rect(50, 124, 60, 26);
+      cmp.fill();
+      cmp.fillStyle = "#fff1d2";
+      cmp.font = "bold 16px sans-serif";
+      cmp.textAlign = "center";
+      cmp.fillText(String(((Math.round(state.heading * 180 / Math.PI) % 360) + 360) % 360) + "\u00b0", 80, 143);
     },
   };
 }

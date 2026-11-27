@@ -1,5 +1,7 @@
 // Sunset sky helpers: sun light + cotton-ball clouds as instanced spheres.
 
+import { getMission } from "../missions.js";
+
 export function buildSky(THREE, scene, doc) {
   scene.background = new THREE.Color(0xffb98a);
   scene.fog = new THREE.Fog(new THREE.Color(0xffc6a0), 400, 1500);
@@ -45,12 +47,24 @@ export function buildSky(THREE, scene, doc) {
   let i = 0;
   let seed = 1234;
   const rnd = () => { seed = (seed * 1103515245 + 12345) & 0x7fffffff; return seed / 0x7fffffff; };
+  const path = [[0, 0], [0, 150]];
+  for (const r of getMission("first-flight").rings) path.push([r.x, r.z]);
+  let maxScale = 0;
+  let minPathDistance = Infinity;
   for (let c = 0; c < clusters; c += 1) {
-    const bx = (rnd() - 0.5) * 1600;
-    const by = 260 + rnd() * 220;
-    const bz = (rnd() - 0.5) * 1600;
+    let bx = 0;
+    let bz = 0;
+    let tries = 0;
+    do {
+      bx = (rnd() - 0.5) * 2600;
+      bz = (rnd() - 0.5) * 2600;
+      tries += 1;
+    } while (tries < 60 && path.some(([px, pz]) => Math.hypot(bx - px, bz - pz) < 340));
+    for (const [px, pz] of path) minPathDistance = Math.min(minPathDistance, Math.hypot(bx - px, bz - pz));
+    const by = 280 + rnd() * 220;
     for (let p = 0; p < perCluster; p += 1) {
-      const s = 12 + rnd() * 16;
+      const s = 8 + rnd() * 8;
+      maxScale = Math.max(maxScale, s);
       dummy.position.set(bx + (rnd() - 0.5) * 40, by + (rnd() - 0.5) * 10, bz + (rnd() - 0.5) * 40);
       dummy.scale.set(s, s * 0.7, s);
       dummy.updateMatrix();
@@ -61,5 +75,5 @@ export function buildSky(THREE, scene, doc) {
   clouds.instanceMatrix.needsUpdate = true;
   clouds.name = "clouds";
   scene.add(clouds);
-  return { sun, clouds, cloudMat, hemi };
+  return { sun, clouds, cloudMat, hemi, cloudInfo: { count: clusters * perCluster, maxScale, minPathDistance } };
 }
