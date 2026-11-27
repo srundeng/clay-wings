@@ -4,6 +4,7 @@ export const MISSIONS = [
   {
     id: "first-flight",
     name: "First Flight",
+    fuelScale: 0.45,
     rings: [
       { x: 0, y: 70, z: 350, r: 24 },
       { x: 140, y: 110, z: 620, r: 26 },

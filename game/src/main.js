@@ -7,7 +7,7 @@ import { buildCockpit } from "./render/cockpit.js";
 import { createInstruments } from "./hud/instruments.js";
 import { stepFuel, damageHull, engineOut, crashed } from "./fuel-and-damage.js";
 import { classifyLanding } from "./landing.js";
-import { createMissionState, advanceMission, objectiveText, activeRing } from "./missions.js";
+import { createMissionState, advanceMission, objectiveText, activeRing, getMission } from "./missions.js";
 import { buildRings } from "./world/rings.js";
 import { createScreens } from "./hud/screens.js";
 import { RUNWAYS } from "./world/terrain.js";
@@ -115,7 +115,7 @@ function tick() {
     };
     stepFlight(state, flightC, dt, groundHeightAt);
     if (engineOut(state)) state.throttle = 0;
-    stepFuel(state, dt, state.ceilingFactor);
+    stepFuel(state, dt, state.ceilingFactor, getMission(missionState.id).fuelScale || 1);
     if (c.gearToggle) state.gearDown = !state.gearDown;
     if (!state.onGround && c.assist && c.pitch === 0 && c.roll === 0) {
       state.roll *= Math.max(0, 1 - 2 * dt);

@@ -79,9 +79,13 @@ export function stepFlight(state, controls, dt, groundHeightAt) {
   state.ceilingFactor = clamp((g.ceilingEnd - state.y) / (g.ceilingEnd - g.ceilingStart), 0, 1);
   const engineThrottle = state.throttle * state.ceilingFactor;
 
-  // Target speed and long. acceleration.
-  const vTarget = g.baseSpeed + g.spanSpeed * engineThrottle;
-  let dv = (vTarget - state.speed) * g.speedDrag;
+  // Engine out (empty tank or above the ceiling): the plane glides instead
+  // of collapsing to the idle speed target.
+  const airborne = !state.onGround;
+  const gliding = airborne && ((state.fuel ?? 100) <= 0 || state.ceilingFactor <= 0);
+  let vTarget = g.baseSpeed + g.spanSpeed * engineThrottle;
+  if (airborne) vTarget = gliding ? g.glideSpeed : Math.max(vTarget, g.glideSpeed);
+  let dv = (vTarget - state.speed) * (gliding ? g.glideDrag : g.speedDrag);
 
   if (!state.onGround) {
     const sinPitch = Math.sin(state.pitch);
@@ -108,9 +112,10 @@ export function stepFlight(state, controls, dt, groundHeightAt) {
   // Vertical speed: climb with pitch; stall sink below stall speed.
   if (!state.onGround) {
     let vs = state.speed * Math.sin(state.pitch);
+    if (gliding) vs -= state.speed / g.glideRatio;
     if (state.speed < g.stallSpeed) {
       vs -= (g.stallSpeed - state.speed) * g.stallSink;
-      state.pitch = Math.max(state.pitch, -0.05);
+      state.pitch = Math.min(state.pitch, -0.05);
     }
     state.verticalSpeed = vs;
     state.y += vs * step;

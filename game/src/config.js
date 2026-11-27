@@ -41,6 +41,10 @@ export const FLIGHT = {
   // Engine thrust fades from full at ceilingStart to zero at ceilingEnd (metres).
   ceilingStart: 700,
   ceilingEnd: 900,
+  // Engine-out glide: target speed and lift/drag ratio (8:1 at 45 m/s).
+  glideSpeed: 45,
+  glideRatio: 8,
+  glideDrag: 0.15,
   // Landing gear transition time (s).
   gearTime: 1.2,
 };

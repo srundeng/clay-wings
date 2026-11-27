@@ -8,8 +8,8 @@ export function fuelBurnRate(throttle, ceilingFactor = 1) {
   return FUEL.idleBurn + FUEL.throttleBurn * clamp01(throttle) * clamp01(ceilingFactor);
 }
 
-export function stepFuel(state, dt, ceilingFactor = 1) {
-  state.fuel = Math.max(0, state.fuel - fuelBurnRate(state.throttle, ceilingFactor) * Math.max(0, dt));
+export function stepFuel(state, dt, ceilingFactor = 1, burnScale = 1) {
+  state.fuel = Math.max(0, state.fuel - fuelBurnRate(state.throttle, ceilingFactor) * burnScale * Math.max(0, dt));
   return state.fuel;
 }
 
