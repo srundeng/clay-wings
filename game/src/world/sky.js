@@ -3,19 +3,19 @@
 import { getMission } from "../missions.js";
 
 export function buildSky(THREE, scene, doc) {
-  scene.background = new THREE.Color(0xffb98a);
-  scene.fog = new THREE.Fog(new THREE.Color(0xffc6a0), 400, 1500);
+  scene.background = new THREE.Color(0xd63a9a);
+  scene.fog = new THREE.Fog(new THREE.Color(0xd86aa8), 400, 1500);
 
   const domeCanvas = doc.createElement("canvas");
   domeCanvas.width = 4;
   domeCanvas.height = 256;
   const g = domeCanvas.getContext("2d");
   const grad = g.createLinearGradient(0, 0, 0, 256);
-  grad.addColorStop(0, "#6f3a86");
-  grad.addColorStop(0.34, "#c05f88");
-  grad.addColorStop(0.58, "#f28a6b");
-  grad.addColorStop(0.74, "#ffc48c");
-  grad.addColorStop(1, "#8f6270");
+  grad.addColorStop(0, "#5b1a8c");
+  grad.addColorStop(0.38, "#d63a9a");
+  grad.addColorStop(0.68, "#ff9a5c");
+  grad.addColorStop(0.78, "#ffb877");
+  grad.addColorStop(1, "#a84d83");
   g.fillStyle = grad;
   g.fillRect(0, 0, 4, 256);
   const dome = new THREE.Mesh(
@@ -25,10 +25,19 @@ export function buildSky(THREE, scene, doc) {
   dome.name = "sky-dome";
   scene.add(dome);
 
-  const hemi = new THREE.HemisphereLight(0xffd9e6, 0xb98a86, 1.15);
+  const sunDisc = new THREE.Mesh(
+    new THREE.CircleGeometry(70, 32),
+    new THREE.MeshBasicMaterial({ color: 0xffb070, fog: false, side: THREE.DoubleSide, depthWrite: false }),
+  );
+  sunDisc.position.set(1200, 130, 1450);
+  sunDisc.lookAt(0, 130, 0);
+  sunDisc.name = "sun-disc";
+  scene.add(sunDisc);
+
+  const hemi = new THREE.HemisphereLight(0xff7ac8, 0x3a2a6a, 1.25);
   scene.add(hemi);
-  const sun = new THREE.DirectionalLight(0xfff0d0, 2.1);
-  sun.position.set(300, 380, 200);
+  const sun = new THREE.DirectionalLight(0xffb070, 2.1);
+  sun.position.set(300, 180, 200);
   sun.castShadow = true;
   sun.shadow.mapSize.set(1024, 1024);
   sun.shadow.camera.left = -160;
@@ -75,5 +84,13 @@ export function buildSky(THREE, scene, doc) {
   clouds.instanceMatrix.needsUpdate = true;
   clouds.name = "clouds";
   scene.add(clouds);
-  return { sun, clouds, cloudMat, hemi, cloudInfo: { count: clusters * perCluster, maxScale, minPathDistance } };
+  return {
+    sun, clouds, cloudMat, hemi, sunDisc,
+    info: { fog: scene.fog.color.getHex(), hemiSky: hemi.color.getHex(), hemiGround: hemi.groundColor.getHex(), sun: sun.color.getHex(), disc: sunDisc.material.color.getHex(), shadowSize: sun.shadow.mapSize.x },
+    updateSun(x, y, z) {
+      sun.position.set(x + 300, y + 180, z + 200);
+      sun.target.position.set(x, y, z);
+      sun.target.updateMatrixWorld();
+    },
+    cloudInfo: { count: clusters * perCluster, maxScale, minPathDistance } };
 }

@@ -162,6 +162,7 @@ function tick() {
   hintEl.classList.toggle("show", showHint);
 
   const agl = state.y - 1.6 - groundHeightAt(state.x, state.z);
+  world.sky.updateSun(state.x, state.y, state.z);
   advanceMission(missionState, state, agl, landing !== null, landing, prevPos);
   hud.setRingCount(ringCountText(missionState));
   const activeRingIndex = missionState.phase === "RINGS" ? missionState.ringIndex : (missionState.phase === "TAKEOFF" ? 0 : -1);
@@ -233,7 +234,7 @@ function tick() {
   }
   if (paused) hud.el.classList.add("paused"); else hud.el.classList.remove("paused");
 
-  window.__DEBUG__ = { controls: c, state: state, cameraMode: cameraMode, cockpit: cockpitMode, exteriorVisible: air.visible, near: camera.near, fov: camera.fov, hintShown: showHint, cloud: world.sky.cloudMat.color.getHex(), cloudEmissive: world.sky.cloudMat.emissiveIntensity, cloudInfo: world.sky.cloudInfo, hemiGround: world.sky.hemi.groundColor.getHex(), phase: phase, mission: { phase: missionState.phase, ringIndex: missionState.ringIndex, complete: missionState.complete, failed: missionState.failed, stars: missionState.stars }, landing: landingText, clayInfo: world.clayInfo, ringInfo: rings.info, runwayInfo: world.runwayInfo, ringStates: rings.stateInfo, lampPosts: !!scene.getObjectByName("lamp-posts"), restarts: restarts, keys: Array.from(input.keys), agl: agl, calls: renderer.info.render.calls };
+  window.__DEBUG__ = { controls: c, state: state, cameraMode: cameraMode, cockpit: cockpitMode, exteriorVisible: air.visible, near: camera.near, fov: camera.fov, hintShown: showHint, cloud: world.sky.cloudMat.color.getHex(), cloudEmissive: world.sky.cloudMat.emissiveIntensity, cloudInfo: world.sky.cloudInfo, hemiGround: world.sky.hemi.groundColor.getHex(), phase: phase, mission: { phase: missionState.phase, ringIndex: missionState.ringIndex, complete: missionState.complete, failed: missionState.failed, stars: missionState.stars }, landing: landingText, clayInfo: world.clayInfo, skyInfo: world.skyInfo, ringInfo: rings.info, runwayInfo: world.runwayInfo, ringStates: rings.stateInfo, lampPosts: !!scene.getObjectByName("lamp-posts"), restarts: restarts, keys: Array.from(input.keys), agl: agl, calls: renderer.info.render.calls };
 
   renderer.render(scene, camera);
   frames += 1;

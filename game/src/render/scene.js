@@ -31,6 +31,7 @@ export function assembleScene(THREE, scene, doc, seed) {
     runwayInfo: runways.userData.runwayInfo,
     mat: matFactory,
     clayInfo: clay.info,
+    skyInfo: sky.info,
     aircraft: aircraft.group,
     prop: aircraft.prop,
     wheels: aircraft.wheels,
