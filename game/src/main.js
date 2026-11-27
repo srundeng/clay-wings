@@ -74,7 +74,25 @@ let elapsed = 0;
 let propAngle = 0;
 let paused = false;
 let cameraMode = shotMode === "cockpit" ? 1 : 0;
-if (isShotScene) setPhase("FLYING"); else setPhase("TITLE", { name: "First Flight", objective: objectiveText(missionState) });
+if (isShotScene) {
+  setPhase("FLYING");
+  if (shotMode === "chase-ring") {
+    Object.assign(state, { x: 0, y: 80, z: 120, heading: 0, speed: 58, throttle: 0.55, fuel: 70, onGround: false, pitch: 0.02, roll: 0.04 });
+    missionState.phase = "RINGS";
+  } else if (shotMode === "cockpit") {
+    cameraMode = 1;
+    Object.assign(state, { x: 620, y: 120, z: 200, heading: -1.65, speed: 55, throttle: 0.5, fuel: 75, onGround: false, pitch: 0, roll: -0.08 });
+    missionState.phase = "RINGS";
+    missionState.ringIndex = 1;
+  } else if (shotMode === "landing") {
+    Object.assign(state, { x: 0, y: 45, z: -250, heading: 0, speed: 45, throttle: 0.2, fuel: 60, onGround: false, pitch: -0.05, verticalSpeed: -4, gearDown: true });
+    missionState.phase = "LAND";
+  } else if (shotMode === "touchdown") {
+    Object.assign(state, { x: 0, y: 13.62, z: 0, heading: 0, speed: 42, throttle: 0, fuel: 60, onGround: false, pitch: -0.03, verticalSpeed: -1.2, gearDown: true });
+    missionState.phase = "RINGS";
+    prevOnGround = false;
+  }
+} else setPhase("TITLE", { name: "First Flight", objective: objectiveText(missionState) });
 let restarts = 0;
 let hintForced = false;
 const camPos = new THREE.Vector3(state.x, state.y + 8, state.z - 16);
@@ -117,7 +135,7 @@ function tick() {
     if (engineOut(state)) state.throttle = 0;
     stepFuel(state, dt, state.ceilingFactor, getMission(missionState.id).fuelScale || 1);
     if (c.gearToggle) state.gearDown = !state.gearDown;
-    if (!state.onGround && c.assist && c.pitch === 0 && c.roll === 0) {
+    if (!state.onGround && c.assist && c.pitch === 0 && c.roll === 0 && shotMode !== "landing") {
       state.roll *= Math.max(0, 1 - 2 * dt);
       const lvl = 0.5 * dt;
       if (Math.abs(state.pitch) <= lvl) state.pitch = 0;
