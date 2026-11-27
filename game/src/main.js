@@ -5,6 +5,12 @@ import { createHud } from "./hud/hud.js";
 import { assembleScene } from "./render/scene.js";
 import { buildCockpit } from "./render/cockpit.js";
 import { createInstruments } from "./hud/instruments.js";
+import { stepFuel, damageHull, engineOut, crashed } from "./fuel-and-damage.js";
+import { classifyLanding } from "./landing.js";
+import { createMissionState, advanceMission, objectiveText, activeRing } from "./missions.js";
+import { buildRings } from "./world/rings.js";
+import { createScreens } from "./hud/screens.js";
+import { RUNWAYS } from "./world/terrain.js";
 
 const canvas = document.getElementById("game");
 const renderer = new THREE.WebGLRenderer({ canvas, antialias: true, preserveDrawingBuffer: true });
@@ -31,6 +37,22 @@ const startY = groundHeightAt(0, 0) + 1.6;
 const state = createFlightState({ x: 0, y: startY, z: 0, heading: 0 });
 const input = createInput(window);
 const hud = createHud(document);
+const rings = buildRings(THREE, "first-flight");
+scene.add(rings.group);
+const screens = createScreens(document);
+let missionState = createMissionState("first-flight");
+let phase = "TITLE";
+let prevOnGround = true;
+let landingText = "";
+
+function setPhase(next, data) {
+  phase = next;
+  if (next === "TITLE") screens.show("TITLE");
+  else if (next === "BRIEFING") screens.show("BRIEFING", data);
+  else if (next === "RESULT") screens.show("RESULT", data);
+  else if (next === "CRASH") screens.show("CRASH", data);
+  else screens.hide();
+}
 
 const hintEl = document.createElement("div");
 hintEl.id = "controls-hint";
@@ -52,6 +74,7 @@ let elapsed = 0;
 let propAngle = 0;
 let paused = false;
 let cameraMode = shotMode === "cockpit" ? 1 : 0;
+if (isShotScene) setPhase("FLYING"); else setPhase("TITLE", { name: "First Flight", objective: objectiveText(missionState) });
 let restarts = 0;
 let hintForced = false;
 const camPos = new THREE.Vector3(state.x, state.y + 8, state.z - 16);
@@ -61,6 +84,11 @@ const COCKPIT_YAW = new THREE.Quaternion().setFromAxisAngle(new THREE.Vector3(0,
 
 function resetMission() {
   Object.assign(state, createFlightState({ x: 0, y: groundHeightAt(0, 0) + 1.6, z: 0, heading: 0 }));
+  missionState = createMissionState("first-flight");
+  prevOnGround = true;
+  landingText = "";
+  hud.flash("");
+  setPhase("FLYING");
   restarts += 1;
 }
 
@@ -68,20 +96,26 @@ function tick() {
   const dt = Math.min(clock.getDelta(), 0.05);
   const c = input.sample();
 
+  if (c.start && (phase === "TITLE" || phase === "BRIEFING")) setPhase("FLYING");
   if (c.pauseToggle) paused = !paused;
   if (c.cameraToggle) cameraMode = 1 - cameraMode;
   if (c.restart) resetMission();
   if (c.hintToggle) hintForced = true;
 
-  if (!paused) {
+  let landing = null;
+  if (!paused && phase === "FLYING") {
+    const sinkBefore = -state.verticalSpeed;
+    const groundBefore = groundHeightAt(state.x, state.z);
     const flightC = {
       pitch: c.pitch,
       roll: c.roll,
       yaw: c.yaw,
-      throttleDelta: (c.throttleUp ? 1 : 0) - (c.throttleDown ? 1 : 0),
+      throttleDelta: engineOut(state) ? -1 : (c.throttleUp ? 1 : 0) - (c.throttleDown ? 1 : 0),
       brake: c.brake,
     };
     stepFlight(state, flightC, dt, groundHeightAt);
+    if (engineOut(state)) state.throttle = 0;
+    stepFuel(state, dt, state.ceilingFactor);
     if (c.gearToggle) state.gearDown = !state.gearDown;
     if (!state.onGround && c.assist && c.pitch === 0 && c.roll === 0) {
       state.roll *= Math.max(0, 1 - 2 * dt);
@@ -89,6 +123,16 @@ function tick() {
       if (Math.abs(state.pitch) <= lvl) state.pitch = 0;
       else state.pitch -= Math.sign(state.pitch) * lvl;
     }
+    const onRunway = RUNWAYS.some((r) => Math.abs(state.x - r.cx) <= r.halfW && Math.abs(state.z - r.cz) <= r.halfL);
+    const surface = onRunway ? "runway" : (groundBefore <= 0.5 ? "water" : "grass");
+    if (!prevOnGround && state.onGround) {
+      landing = classifyLanding({ sink: sinkBefore, speed: state.speed, gearDown: state.gearDown, bank: state.roll, surface });
+      landingText = landing.text;
+      damageHull(state, landing.damage);
+      hud.flash(landing.text);
+      if (crashed(state)) setPhase("CRASH", { detail: landing.text });
+    }
+    prevOnGround = state.onGround;
     propAngle += (6 + state.throttle * 60) * dt;
     elapsed += dt;
   }
@@ -97,6 +141,18 @@ function tick() {
   hintEl.classList.toggle("show", showHint);
 
   const agl = state.y - 1.6 - groundHeightAt(state.x, state.z);
+  advanceMission(missionState, state, agl, landing !== null, landing);
+  rings.setActive(missionState.phase === "RINGS" ? missionState.ringIndex : -1);
+  hud.setObjective(objectiveText(missionState));
+  if (missionState.lastEvent === "ring") hud.flash("RING " + missionState.ringIndex + "/5");
+  if (missionState.lastEvent === "complete") {
+    setPhase("RESULT", { detail: landingText + " | " + missionState.stars + " stars" });
+    hud.flash("");
+  }
+  if (missionState.lastEvent === "failed") setPhase("CRASH", { detail: landingText || "Mission failed" });
+  const ring = activeRing(missionState);
+  if (ring) hud.setTarget(Math.hypot(ring.x - state.x, ring.z - state.z), Math.atan2(ring.x - state.x, ring.z - state.z) - state.heading);
+  else hud.setTarget(null, 0);
   const air = world.aircraft;
   air.position.set(state.x, state.y - 0.5, state.z);
   air.rotation.order = "YXZ";
@@ -154,7 +210,7 @@ function tick() {
   }
   if (paused) hud.el.classList.add("paused"); else hud.el.classList.remove("paused");
 
-  window.__DEBUG__ = { controls: c, state: state, cameraMode: cameraMode, cockpit: cockpitMode, exteriorVisible: air.visible, near: camera.near, fov: camera.fov, hintShown: showHint, cloud: world.sky.cloudMat.color.getHex(), cloudEmissive: world.sky.cloudMat.emissiveIntensity, hemiGround: world.sky.hemi.groundColor.getHex(), lampPosts: !!scene.getObjectByName("lamp-posts"), restarts: restarts, keys: Array.from(input.keys), agl: agl, calls: renderer.info.render.calls };
+  window.__DEBUG__ = { controls: c, state: state, cameraMode: cameraMode, cockpit: cockpitMode, exteriorVisible: air.visible, near: camera.near, fov: camera.fov, hintShown: showHint, cloud: world.sky.cloudMat.color.getHex(), cloudEmissive: world.sky.cloudMat.emissiveIntensity, hemiGround: world.sky.hemi.groundColor.getHex(), phase: phase, mission: { phase: missionState.phase, ringIndex: missionState.ringIndex, complete: missionState.complete, failed: missionState.failed, stars: missionState.stars }, landing: landingText, lampPosts: !!scene.getObjectByName("lamp-posts"), restarts: restarts, keys: Array.from(input.keys), agl: agl, calls: renderer.info.render.calls };
 
   renderer.render(scene, camera);
   frames += 1;

@@ -47,6 +47,17 @@ export function createHud(doc) {
   objective.textContent = "Take off, then land on the runway";
   el.appendChild(objective);
 
+  const target = doc.createElement("div");
+  target.id = "hud-target";
+  target.className = "hud-target";
+  target.innerHTML = '<span id="hud-target-arrow">&#9650;</span> <span id="hud-target-text"></span>';
+  el.appendChild(target);
+
+  const banner = doc.createElement("div");
+  banner.id = "hud-banner";
+  banner.className = "hud-banner";
+  el.appendChild(banner);
+
   const compass = doc.createElement("div");
   compass.id = "hud-compass";
   compass.className = "hud-compass";
@@ -76,6 +87,26 @@ export function createHud(doc) {
       if (!state.onGround && state.speed < FLIGHT.stallSpeed) warnings.push("STALL");
       warning.textContent = warnings.join("  ");
       this.renderCompass(hdg);
+    },
+    setObjective(text) {
+      document.getElementById("hud-objective").textContent = text;
+    },
+    setTarget(distance, relativeAngle) {
+      const arrow = document.getElementById("hud-target-arrow");
+      const label = document.getElementById("hud-target-text");
+      if (distance === null || distance === undefined) {
+        label.textContent = "";
+        arrow.style.opacity = "0";
+        return;
+      }
+      arrow.style.opacity = "1";
+      arrow.style.transform = "rotate(" + Math.round(relativeAngle * 180 / Math.PI) + "deg)";
+      label.textContent = Math.round(distance) + " m";
+    },
+    flash(text) {
+      const b = document.getElementById("hud-banner");
+      b.textContent = text;
+      b.style.opacity = text ? "1" : "0";
     },
     renderCompass(hdg) {
       const el2 = document.getElementById("hud-compass");

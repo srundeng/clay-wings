@@ -10,15 +10,15 @@ const GAME_KEYS = new Set([
   "KeyW", "KeyA", "KeyS", "KeyD", "KeyQ", "KeyE", "KeyZ", "KeyX", "KeyG",
   "KeyC", "KeyR", "KeyP", "KeyB", "KeyM", "KeyI", "KeyT", "KeyH",
   "ShiftLeft", "ShiftRight", "ControlLeft", "ControlRight",
-  "ArrowUp", "ArrowDown", "ArrowLeft", "ArrowRight", "Space",
+  "ArrowUp", "ArrowDown", "ArrowLeft", "ArrowRight", "Space", "Enter",
 ]);
 
-const ONE_SHOT = new Set(["KeyG", "KeyC", "KeyR", "KeyP", "KeyM", "KeyI", "KeyT", "KeyH"]);
+const ONE_SHOT = new Set(["KeyG", "KeyC", "KeyR", "KeyP", "KeyM", "KeyI", "KeyT", "KeyH", "Enter"]);
 
 export function createInput(window) {
   const doc = window.document;
   const keys = new Set();
-  const events = { gearToggle: 0, cameraToggle: 0, restart: 0, pauseToggle: 0, mouseToggle: 0, invertToggle: 0, assistToggle: 0, hintToggle: 0 };
+  const events = { gearToggle: 0, cameraToggle: 0, restart: 0, pauseToggle: 0, mouseToggle: 0, invertToggle: 0, assistToggle: 0, hintToggle: 0, start: 0 };
 
   const controls = {
     pitch: 0,
@@ -35,6 +35,7 @@ export function createInput(window) {
     invertPitch: false,
     assist: true,
     hintToggle: false,
+    start: false,
   };
 
   const mouse = { enabled: false, x: 0, y: 0 };
@@ -55,6 +56,7 @@ export function createInput(window) {
       else if (code === "KeyI") events.invertToggle += 1;
       else if (code === "KeyT") events.assistToggle += 1;
       else if (code === "KeyH") events.hintToggle += 1;
+      else if (code === "Enter") events.start += 1;
     }
   }
   function onKeyUp(event) {
@@ -134,6 +136,7 @@ export function createInput(window) {
     controls.restart = events.restart > 0;
     controls.pauseToggle = events.pauseToggle > 0;
     controls.hintToggle = events.hintToggle > 0;
+    controls.start = events.start > 0;
     controls.mouseSteer = mouseSteerOn;
     controls.invertPitch = invert;
 
@@ -141,6 +144,8 @@ export function createInput(window) {
     events.cameraToggle = 0;
     events.restart = 0;
     events.pauseToggle = 0;
+    events.hintToggle = 0;
+    events.start = 0;
 
     return controls;
   }
