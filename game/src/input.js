@@ -10,15 +10,15 @@ const GAME_KEYS = new Set([
   "KeyW", "KeyA", "KeyS", "KeyD", "KeyQ", "KeyE", "KeyZ", "KeyX", "KeyG",
   "KeyC", "KeyR", "KeyP", "KeyB", "KeyM", "KeyI", "KeyT", "KeyH",
   "ShiftLeft", "ShiftRight", "ControlLeft", "ControlRight",
-  "ArrowUp", "ArrowDown", "ArrowLeft", "ArrowRight", "Space", "Enter",
+  "ArrowUp", "ArrowDown", "ArrowLeft", "ArrowRight", "Space", "Enter", "Digit1", "Digit2", "Digit3",
 ]);
 
-const ONE_SHOT = new Set(["KeyG", "KeyC", "KeyR", "KeyP", "KeyM", "KeyI", "KeyT", "KeyH", "Enter"]);
+const ONE_SHOT = new Set(["KeyG", "KeyC", "KeyR", "KeyP", "KeyM", "KeyI", "KeyT", "KeyH", "Enter", "Space", "Digit1", "Digit2", "Digit3"]);
 
 export function createInput(window) {
   const doc = window.document;
   const keys = new Set();
-  const events = { gearToggle: 0, cameraToggle: 0, restart: 0, pauseToggle: 0, mouseToggle: 0, invertToggle: 0, assistToggle: 0, hintToggle: 0, start: 0 };
+  const events = { gearToggle: 0, cameraToggle: 0, restart: 0, pauseToggle: 0, mouseToggle: 0, invertToggle: 0, assistToggle: 0, hintToggle: 0, start: 0, selectMission: 0, drop: 0 };
 
   const controls = {
     pitch: 0,
@@ -36,6 +36,8 @@ export function createInput(window) {
     assist: true,
     hintToggle: false,
     start: false,
+    selectMission: 0,
+    drop: false,
   };
 
   const mouse = { enabled: false, x: 0, y: 0 };
@@ -57,6 +59,10 @@ export function createInput(window) {
       else if (code === "KeyT") events.assistToggle += 1;
       else if (code === "KeyH") events.hintToggle += 1;
       else if (code === "Enter") events.start += 1;
+      else if (code === "Space") events.drop += 1;
+      else if (code === "Digit1") events.selectMission = 1;
+      else if (code === "Digit2") events.selectMission = 2;
+      else if (code === "Digit3") events.selectMission = 3;
     }
   }
   function onKeyUp(event) {
@@ -137,6 +143,8 @@ export function createInput(window) {
     controls.pauseToggle = events.pauseToggle > 0;
     controls.hintToggle = events.hintToggle > 0;
     controls.start = events.start > 0;
+    controls.selectMission = events.selectMission;
+    controls.drop = events.drop > 0;
     controls.mouseSteer = mouseSteerOn;
     controls.invertPitch = invert;
 
@@ -146,6 +154,8 @@ export function createInput(window) {
     events.pauseToggle = 0;
     events.hintToggle = 0;
     events.start = 0;
+    events.selectMission = 0;
+    events.drop = 0;
 
     return controls;
   }

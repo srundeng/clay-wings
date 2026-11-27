@@ -5,7 +5,7 @@ export function createScreens(doc) {
   el.id = "screens";
   el.className = "hidden";
   el.innerHTML =
-    '<div id="screen-title" class="screen-card"><h1>CLAY WINGS</h1><p>Fly a plasticine plane over a sunset archipelago.</p><p class="screen-key">Press Enter to begin</p></div>' +
+    '<div id="screen-title" class="screen-card"><h1>CLAY WINGS</h1><p>Fly a plasticine plane over a sunset archipelago.</p><p class="screen-key">1 First Flight &middot; 2 Mail Run &middot; 3 Beacon Sweep</p><p>Press 1/2/3 to choose, Enter to fly</p></div>' +
     '<div id="screen-brief" class="screen-card"><h2 id="brief-name">First Flight</h2><p id="brief-objective">Take off from Home Runway</p><p class="screen-key">Enter to fly &middot; W/S pitch &middot; A/D roll &middot; Z/X throttle</p></div>' +
     '<div id="screen-result" class="screen-card"><h2>MISSION COMPLETE</h2><p id="result-detail"></p><p class="screen-key">R to fly again</p></div>' +
     '<div id="screen-crash" class="screen-card"><h2>CRASHED</h2><p id="crash-detail"></p><p class="screen-key">R to retry</p></div>';
