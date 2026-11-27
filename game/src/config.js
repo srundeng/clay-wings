@@ -32,6 +32,15 @@ export const FLIGHT = {
   // Ground rolling drag (per second) and brake deceleration.
   groundFriction: 0.15,
   brakeFriction: 8,
+  // Pitch is limited to +/-50 degrees; the plane cannot point straight up.
+  maxPitch: 50 * Math.PI / 180,
+  // Extra gravity bleed ramps in above this pitch (20 degrees).
+  steepPitch: 20 * Math.PI / 180,
+  // Strength of the extra gravity term on steep climbs.
+  climbBleed: 7,
+  // Engine thrust fades from full at ceilingStart to zero at ceilingEnd (metres).
+  ceilingStart: 700,
+  ceilingEnd: 900,
   // Landing gear transition time (s).
   gearTime: 1.2,
 };

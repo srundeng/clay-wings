@@ -2,6 +2,8 @@
 // Digits are kept large (>= 28 px) so they read well shrunk to 400 px wide.
 // All text is English per the language policy.
 
+import { FLIGHT, FUEL, DAMAGE } from "../config.js";
+
 export function createHud(doc) {
   const el = doc.createElement("div");
   el.id = "hud";
@@ -34,6 +36,11 @@ export function createHud(doc) {
   const fuel = t("hud-fuel", "FUEL", "%");
   const hull = t("hud-hull", "HULL", "%");
   const gear = t("hud-gear", "GEAR", "");
+  const warning = doc.createElement("div");
+  warning.id = "hud-warning";
+  warning.className = "hud-warning";
+  warning.textContent = "";
+  el.appendChild(warning);
   const objective = doc.createElement("div");
   objective.id = "hud-objective";
   objective.className = "hud-objective";
@@ -62,6 +69,12 @@ export function createHud(doc) {
       document.getElementById("hud-fuel").textContent = Math.round(state.fuel).toString();
       document.getElementById("hud-hull").textContent = Math.round(state.hull).toString();
       document.getElementById("hud-gear").textContent = state.gearDown ? "DN" : "UP";
+      const warnings = [];
+      if (state.y >= FLIGHT.ceilingStart) warnings.push("CEILING");
+      if (state.fuel < FUEL.warningLevel) warnings.push("LOW FUEL");
+      if (state.hull < DAMAGE.warningLevel) warnings.push("DAMAGE");
+      if (!state.onGround && state.speed < FLIGHT.stallSpeed) warnings.push("STALL");
+      warning.textContent = warnings.join("  ");
       this.renderCompass(hdg);
     },
     renderCompass(hdg) {

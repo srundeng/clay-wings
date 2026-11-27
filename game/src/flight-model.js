@@ -26,6 +26,7 @@ export function createFlightState(overrides = {}) {
     onGround: true,
     gearDown: true,
     throttle: 0,
+    ceilingFactor: 1,
     fuel: 100,
     hull: 100,
     ...overrides,
@@ -73,14 +74,21 @@ export function stepFlight(state, controls, dt, groundHeightAt) {
   const wantThrottle = clamp(state.throttle + (c.throttleDelta ?? 0) * g.throttleRate * step, 0, 1);
   state.throttle = wantThrottle;
 
+  // Engine thrust fades out near the ceiling. The HUD reads ceilingFactor
+  // to show the CEILING warning.
+  state.ceilingFactor = clamp((g.ceilingEnd - state.y) / (g.ceilingEnd - g.ceilingStart), 0, 1);
+  const engineThrottle = state.throttle * state.ceilingFactor;
+
   // Target speed and long. acceleration.
-  const vTarget = g.baseSpeed + g.spanSpeed * state.throttle;
+  const vTarget = g.baseSpeed + g.spanSpeed * engineThrottle;
   let dv = (vTarget - state.speed) * g.speedDrag;
 
   if (!state.onGround) {
-    dv -= g.gravity * Math.sin(state.pitch) * g.pitchFactor;
+    const sinPitch = Math.sin(state.pitch);
+    const steep = Math.max(0, sinPitch - Math.sin(g.steepPitch));
+    dv -= g.gravity * (sinPitch * g.pitchFactor + steep * g.climbBleed);
     const auth = authority(state.speed);
-    state.pitch = clamp(state.pitch + (c.pitch ?? 0) * g.pitchRate * auth * step, -1.2, 1.2);
+    state.pitch = clamp(state.pitch + (c.pitch ?? 0) * g.pitchRate * auth * step, -g.maxPitch, g.maxPitch);
     state.roll = clamp(state.roll + (c.roll ?? 0) * g.rollRate * auth * step, -1.5, 1.5);
     state.heading += (c.yaw ?? 0) * 0.5 * auth * step;
     state.heading += (g.gravity * Math.tan(state.roll)) / Math.max(state.speed, g.turnMinSpeed) * step;
