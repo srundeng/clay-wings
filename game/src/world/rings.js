@@ -6,7 +6,7 @@ import { getMission } from "../missions.js";
 const ACTIVE_TUBE = 6;
 const THIN_TUBE = 2.5;
 
-export function buildRings(THREE, missionId) {
+export function buildRings(THREE, missionId, mat) {
   const group = new THREE.Group();
   group.name = "mission-rings";
   const rings = getMission(missionId).rings;
@@ -16,14 +16,12 @@ export function buildRings(THREE, missionId) {
   let prev = { x: 0, z: 0 };
 
   for (const ring of rings) {
-    const thickMat = new THREE.MeshStandardMaterial({
-      color: 0xfff6d2, emissive: 0xffd45a, emissiveIntensity: 1.4,
-      roughness: 0.7, metalness: 0, transparent: true, opacity: 1,
-    });
-    const thinMat = new THREE.MeshStandardMaterial({
-      color: 0x66d7d0, emissive: 0x1f8f8a, emissiveIntensity: 0.55,
-      roughness: 0.8, metalness: 0, transparent: true, opacity: 0.7,
-    });
+    const thickMat = (mat || ((c, o) => new THREE.MeshStandardMaterial({ color: c, ...o })))(
+      0xfff6d2, { emissive: 0xffd45a, emissiveIntensity: 1.4, transparent: true, opacity: 1 },
+    );
+    const thinMat = (mat || ((c, o) => new THREE.MeshStandardMaterial({ color: c, ...o })))(
+      0x66d7d0, { emissive: 0x1f8f8a, emissiveIntensity: 0.55, transparent: true, opacity: 0.7 },
+    );
     const rotation = Math.atan2(ring.x - prev.x, ring.z - prev.z);
     const thick = new THREE.Mesh(new THREE.TorusGeometry(ring.r, ACTIVE_TUBE, 10, 32), thickMat);
     thick.position.set(ring.x, ring.y, ring.z);

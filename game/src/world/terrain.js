@@ -82,7 +82,7 @@ function colorFor(h, slope, out) {
   out[2] = c[2];
 }
 
-export function buildTerrainMesh(THREE) {
+export function buildTerrainMesh(THREE, mat) {
   const n = GRID;
   const span = 2 * WORLD_HALF;
   const step = span / (n - 1);
@@ -123,8 +123,8 @@ export function buildTerrainMesh(THREE) {
   geo.setAttribute("color", new THREE.BufferAttribute(colors, 3));
   geo.setIndex(indices);
   geo.computeVertexNormals();
-  const mat = new THREE.MeshStandardMaterial({ vertexColors: true, roughness: 0.95, metalness: 0.0 });
-  const mesh = new THREE.Mesh(geo, mat);
+  const material = mat ? mat(0xffffff, { vertexColors: true }) : new THREE.MeshStandardMaterial({ vertexColors: true, roughness: 0.95, metalness: 0 });
+  const mesh = new THREE.Mesh(geo, material);
   mesh.receiveShadow = true;
   mesh.name = "terrain";
   return mesh;
