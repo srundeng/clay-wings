@@ -1,112 +1,68 @@
-// Camera-attached clay cockpit: instrument panel, three lit dials (artificial
-// horizon, airspeed, altitude) and a canopy frame. Kept out of the near plane.
+// Camera-attached cockpit shell: thin windscreen frame, rounded glare shield,
+// cowl with a translucent spinning prop disc, and wing roots. No thick slabs.
 
 export function buildCockpit(THREE, doc, camera) {
   const group = new THREE.Group();
   group.name = "cockpit";
-  const clay = (color) => new THREE.MeshStandardMaterial({ color, roughness: 0.92, metalness: 0 });
+  const clay = (color, extra) =>
+    new THREE.MeshStandardMaterial({ color, roughness: 0.9, metalness: 0, ...(extra || {}) });
 
-  const panel = new THREE.Mesh(new THREE.BoxGeometry(1.8, 0.55, 0.16), clay(0x6b4a35));
-  panel.position.set(0, -0.64, -1.2);
-  panel.rotation.x = -0.24;
-  group.add(panel);
+  const frameMat = clay(0x33403f);
+  const shieldMat = clay(0x254044);
 
-  const shield = new THREE.Mesh(new THREE.BoxGeometry(1.9, 0.13, 0.34), clay(0x4a3325));
-  shield.position.set(0, -0.38, -1.08);
+  function rod(radius, length, x, y, z, rotZ, material) {
+    const m = new THREE.Mesh(new THREE.CylinderGeometry(radius, radius, length, 10), material);
+    m.position.set(x, y, z);
+    m.rotation.z = rotZ;
+    group.add(m);
+    return m;
+  }
+
+  rod(0.024, 0.85, -0.62, 0.02, -0.6, -0.18, frameMat);
+  rod(0.024, 0.85, 0.62, 0.02, -0.6, 0.18, frameMat);
+  rod(0.02, 1.15, 0, 0.44, -0.6, Math.PI / 2, frameMat);
+
+  const shield = new THREE.Mesh(new THREE.BoxGeometry(1.35, 0.22, 0.12), shieldMat);
+  shield.position.set(0, -0.42, -0.8);
   group.add(shield);
+  rod(0.04, 1.35, 0, -0.31, -0.8, Math.PI / 2, shieldMat);
 
-  function makeDial(x, radius, draw) {
-    const canvas = doc.createElement("canvas");
-    canvas.width = canvas.height = 128;
-    const ctx = canvas.getContext("2d");
-    const tex = new THREE.CanvasTexture(canvas);
-    const mesh = new THREE.Mesh(
-      new THREE.CircleGeometry(radius, 32),
-      new THREE.MeshBasicMaterial({ map: tex, side: THREE.DoubleSide }),
+  const cowl = new THREE.Mesh(new THREE.SphereGeometry(0.12, 12, 8), shieldMat);
+  cowl.scale.set(1.3, 0.7, 1);
+  cowl.position.set(0, -0.26, -0.95);
+  group.add(cowl);
+
+  const propSpin = new THREE.Group();
+  propSpin.position.set(0, -0.24, -1.05);
+  const disc = new THREE.Mesh(
+    new THREE.CircleGeometry(0.14, 24),
+    new THREE.MeshBasicMaterial({ color: 0xe8e2d6, transparent: true, opacity: 0.22, side: THREE.DoubleSide, depthWrite: false }),
+  );
+  propSpin.add(disc);
+  for (const a of [0, Math.PI / 2]) {
+    const blade = new THREE.Mesh(
+      new THREE.BoxGeometry(0.26, 0.018, 0.012),
+      new THREE.MeshBasicMaterial({ color: 0x3d4240, transparent: true, opacity: 0.55 }),
     );
-    mesh.position.set(x, -0.62, -1.05);
-    mesh.rotation.x = -0.24;
-    group.add(mesh);
-    return { ctx, tex, draw };
+    blade.rotation.z = a;
+    propSpin.add(blade);
   }
+  group.add(propSpin);
 
-  const horizon = makeDial(0, 0.18, (ctx, state) => {
-    ctx.clearRect(0, 0, 128, 128);
-    ctx.save();
-    ctx.translate(64, 64);
-    ctx.rotate(-state.roll);
-    const off = Math.max(-58, Math.min(58, state.pitch * 92));
-    ctx.translate(0, off);
-    ctx.fillStyle = "#5a9fd0";
-    ctx.fillRect(-100, -100, 200, 100);
-    ctx.fillStyle = "#a87544";
-    ctx.fillRect(-100, 0, 200, 100);
-    ctx.strokeStyle = "#fff4d6";
-    ctx.lineWidth = 3;
-    ctx.beginPath();
-    ctx.moveTo(-100, 0);
-    ctx.lineTo(100, 0);
-    ctx.stroke();
-    ctx.restore();
-    ctx.strokeStyle = "#ffd23f";
-    ctx.lineWidth = 3;
-    ctx.beginPath();
-    ctx.moveTo(45, 64);
-    ctx.lineTo(57, 64);
-    ctx.moveTo(71, 64);
-    ctx.lineTo(83, 64);
-    ctx.stroke();
-  });
-
-  const speed = makeDial(-0.48, 0.11, (ctx, state) => {
-    ctx.fillStyle = "#2a211c";
-    ctx.fillRect(0, 0, 128, 128);
-    ctx.strokeStyle = "#d9c9a8";
-    ctx.lineWidth = 4;
-    ctx.beginPath();
-    ctx.arc(64, 64, 54, 0, Math.PI * 2);
-    ctx.stroke();
-    ctx.fillStyle = "#f4ead2";
-    ctx.font = "bold 28px sans-serif";
-    ctx.textAlign = "center";
-    ctx.fillText(String(Math.round(state.speed * 3.6)), 64, 74);
-  });
-
-  const alt = makeDial(0.48, 0.11, (ctx, state, agl) => {
-    ctx.fillStyle = "#2a211c";
-    ctx.fillRect(0, 0, 128, 128);
-    ctx.strokeStyle = "#d9c9a8";
-    ctx.lineWidth = 4;
-    ctx.beginPath();
-    ctx.arc(64, 64, 54, 0, Math.PI * 2);
-    ctx.stroke();
-    ctx.fillStyle = "#f4ead2";
-    ctx.font = "bold 26px sans-serif";
-    ctx.textAlign = "center";
-    ctx.fillText(String(Math.max(0, Math.round(agl))), 64, 74);
-  });
-
-  const frameMat = clay(0x7a6555);
-  for (const sx of [-1, 1]) {
-    const bar = new THREE.Mesh(new THREE.BoxGeometry(0.045, 0.95, 0.045), frameMat);
-    bar.position.set(sx * 0.65, 0.08, -0.92);
-    group.add(bar);
+  const wingMat = clay(0xf0c96a);
+  for (const side of [-1, 1]) {
+    const root = new THREE.Mesh(new THREE.BoxGeometry(0.44, 0.07, 0.45), wingMat);
+    root.position.set(side * 0.78, -0.38, -0.8);
+    root.rotation.z = -side * 0.18;
+    group.add(root);
   }
-  const top = new THREE.Mesh(new THREE.BoxGeometry(1.35, 0.045, 0.045), frameMat);
-  top.position.set(0, 0.56, -0.92);
-  group.add(top);
 
   camera.add(group);
 
   return {
     group,
-    update(state, agl) {
-      horizon.draw(horizon.ctx, state);
-      horizon.tex.needsUpdate = true;
-      speed.draw(speed.ctx, state);
-      speed.tex.needsUpdate = true;
-      alt.draw(alt.ctx, state, agl);
-      alt.tex.needsUpdate = true;
+    update(propAngle) {
+      propSpin.rotation.z = propAngle;
     },
   };
 }

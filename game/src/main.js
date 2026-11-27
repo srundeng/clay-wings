@@ -4,6 +4,7 @@ import { createInput } from "./input.js";
 import { createHud } from "./hud/hud.js";
 import { assembleScene } from "./render/scene.js";
 import { buildCockpit } from "./render/cockpit.js";
+import { createInstruments } from "./hud/instruments.js";
 
 const canvas = document.getElementById("game");
 const renderer = new THREE.WebGLRenderer({ canvas, antialias: true, preserveDrawingBuffer: true });
@@ -22,6 +23,7 @@ const seed = Number(seedParam) || 7;
 const shotMode = new URLSearchParams(location.search).get("shot") || "play";
 const world = assembleScene(THREE, scene, document, seed);
 const cockpit = buildCockpit(THREE, document, camera);
+const instruments = createInstruments(document);
 const groundHeightAt = world.groundHeightAt;
 
 const startY = groundHeightAt(0, 0) + 1.6;
@@ -101,8 +103,15 @@ function tick() {
   world.prop.rotation.z = propAngle;
   world.wheels.visible = state.gearDown;
   const cockpitMode = cameraMode === 1;
+  const wantFov = cockpitMode ? 75 : 60;
+  if (camera.fov !== wantFov) {
+    camera.fov = wantFov;
+    camera.updateProjectionMatrix();
+  }
   air.visible = !cockpitMode;
   cockpit.group.visible = cockpitMode;
+  if (window.__CW_HIDE_COCKPIT_PARTS__) cockpit.group.visible = false;
+  document.body.classList.toggle("cockpit", cockpitMode);
 
   if (shotMode === "start") {
     camera.position.set(0, 120, -800);
@@ -136,10 +145,13 @@ function tick() {
   }
 
   hud.update(state, agl);
-  if (cockpitMode) cockpit.update(state, agl);
+  if (cockpitMode) {
+    cockpit.update(propAngle);
+    instruments.update(state, agl);
+  }
   if (paused) hud.el.classList.add("paused"); else hud.el.classList.remove("paused");
 
-  window.__DEBUG__ = { controls: c, state: state, cameraMode: cameraMode, cockpit: cockpitMode, exteriorVisible: air.visible, near: camera.near, restarts: restarts, keys: Array.from(input.keys), agl: agl, calls: renderer.info.render.calls };
+  window.__DEBUG__ = { controls: c, state: state, cameraMode: cameraMode, cockpit: cockpitMode, exteriorVisible: air.visible, near: camera.near, fov: camera.fov, restarts: restarts, keys: Array.from(input.keys), agl: agl, calls: renderer.info.render.calls };
 
   renderer.render(scene, camera);
   frames += 1;
