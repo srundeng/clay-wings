@@ -35,7 +35,7 @@ export function assembleScene(THREE, scene, doc, seed) {
   const matFactory = (color) =>
     new THREE.MeshStandardMaterial({ color, roughness: 0.86, metalness: 0.02, bumpMap: bump, bumpScale: 0.02 });
 
-  buildSky(THREE, scene, doc);
+  const sky = buildSky(THREE, scene, doc);
   const terrain = buildTerrainMesh(THREE);
   scene.add(terrain);
   scene.add(buildWater(THREE, matFactory));
@@ -47,6 +47,7 @@ export function assembleScene(THREE, scene, doc, seed) {
 
   return {
     terrain,
+    sky,
     aircraft: aircraft.group,
     prop: aircraft.prop,
     wheels: aircraft.wheels,

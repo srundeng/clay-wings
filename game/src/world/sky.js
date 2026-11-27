@@ -23,7 +23,8 @@ export function buildSky(THREE, scene, doc) {
   dome.name = "sky-dome";
   scene.add(dome);
 
-  scene.add(new THREE.HemisphereLight(0xffe0c0, 0x5a4a48, 0.85));
+  const hemi = new THREE.HemisphereLight(0xffd9e6, 0xb98a86, 1.15);
+  scene.add(hemi);
   const sun = new THREE.DirectionalLight(0xfff0d0, 2.1);
   sun.position.set(300, 380, 200);
   sun.castShadow = true;
@@ -35,7 +36,7 @@ export function buildSky(THREE, scene, doc) {
   scene.add(sun);
   scene.add(sun.target);
 
-  const cloudMat = new THREE.MeshStandardMaterial({ color: 0xfff4ea, roughness: 1, metalness: 0 });
+  const cloudMat = new THREE.MeshStandardMaterial({ color: 0xfff2f4, roughness: 1, metalness: 0, emissive: 0x5a2f42, emissiveIntensity: 0.5 });
   const puff = new THREE.SphereGeometry(1, 8, 8);
   const clusters = 26;
   const perCluster = 5;
@@ -60,5 +61,5 @@ export function buildSky(THREE, scene, doc) {
   clouds.instanceMatrix.needsUpdate = true;
   clouds.name = "clouds";
   scene.add(clouds);
-  return { sun, clouds };
+  return { sun, clouds, cloudMat, hemi };
 }

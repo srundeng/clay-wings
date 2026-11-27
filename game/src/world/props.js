@@ -120,20 +120,6 @@ export function buildProps(THREE, mat, random) {
     group.add(sp);
   }
 
-  // Lamp posts along the home runway edges.
-  const postGeo = new THREE.CylinderGeometry(0.2, 0.2, 7, 6);
-  const posts = new THREE.InstancedMesh(postGeo, mat(0x4a4a4a), 12);
-  for (let i = 0; i < 12; i += 1) {
-    const side = i < 6 ? -1 : 1;
-    dummy.position.set(side * 12, 12 + 3.5, -60 + (i % 6) * 42);
-    dummy.rotation.set(0, 0, 0);
-    dummy.scale.set(1, 1, 1);
-    dummy.updateMatrix();
-    posts.setMatrixAt(i, dummy.matrix);
-  }
-  posts.instanceMatrix.needsUpdate = true;
-  group.add(posts);
-
   // A small pier reaching into the sea from the home island's south shore.
   const planks = new THREE.InstancedMesh(new THREE.BoxGeometry(9, 0.4, 5), mat(0x9c7a52), 7);
   for (let i = 0; i < 7; i += 1) {

@@ -21,6 +21,7 @@ scene.add(camera);
 const seedParam = new URLSearchParams(location.search).get("seed");
 const seed = Number(seedParam) || 7;
 const shotMode = new URLSearchParams(location.search).get("shot") || "play";
+const isShotScene = new URLSearchParams(location.search).has("shot");
 const world = assembleScene(THREE, scene, document, seed);
 const cockpit = buildCockpit(THREE, document, camera);
 const instruments = createInstruments(document);
@@ -35,7 +36,7 @@ const hintEl = document.createElement("div");
 hintEl.id = "controls-hint";
 hintEl.innerHTML =
   "Z/Shift throttle up &middot; X/Ctrl down &middot; W/S pitch &middot; A/D roll &middot; Q/E rudder &middot; B brake &middot; G gear &middot; C camera &middot; P pause &middot; R restart &middot; M mouse &middot; I invert &middot; T assist &middot; H hint &middot; click to steer";
-document.body.appendChild(hintEl);
+if (!isShotScene) document.body.appendChild(hintEl);
 
 function resize() {
   camera.aspect = window.innerWidth / window.innerHeight;
@@ -45,6 +46,7 @@ function resize() {
 window.addEventListener("resize", resize);
 
 const clock = new THREE.Clock();
+const startedAt = performance.now();
 let frames = 0;
 let elapsed = 0;
 let propAngle = 0;
@@ -91,7 +93,8 @@ function tick() {
     elapsed += dt;
   }
 
-  hintEl.classList.toggle("show", paused || hintForced || (!paused && elapsed < 10));
+  const showHint = !isShotScene && (paused || hintForced || (!paused && performance.now() - startedAt < 10000));
+  hintEl.classList.toggle("show", showHint);
 
   const agl = state.y - 1.6 - groundHeightAt(state.x, state.z);
   const air = world.aircraft;
@@ -151,7 +154,7 @@ function tick() {
   }
   if (paused) hud.el.classList.add("paused"); else hud.el.classList.remove("paused");
 
-  window.__DEBUG__ = { controls: c, state: state, cameraMode: cameraMode, cockpit: cockpitMode, exteriorVisible: air.visible, near: camera.near, fov: camera.fov, restarts: restarts, keys: Array.from(input.keys), agl: agl, calls: renderer.info.render.calls };
+  window.__DEBUG__ = { controls: c, state: state, cameraMode: cameraMode, cockpit: cockpitMode, exteriorVisible: air.visible, near: camera.near, fov: camera.fov, hintShown: showHint, cloud: world.sky.cloudMat.color.getHex(), cloudEmissive: world.sky.cloudMat.emissiveIntensity, hemiGround: world.sky.hemi.groundColor.getHex(), lampPosts: !!scene.getObjectByName("lamp-posts"), restarts: restarts, keys: Array.from(input.keys), agl: agl, calls: renderer.info.render.calls };
 
   renderer.render(scene, camera);
   frames += 1;
