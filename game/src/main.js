@@ -7,7 +7,7 @@ import { buildCockpit } from "./render/cockpit.js";
 import { createInstruments } from "./hud/instruments.js";
 import { stepFuel, damageHull, engineOut, crashed } from "./fuel-and-damage.js";
 import { classifyLanding } from "./landing.js";
-import { createMissionState, advanceMission, objectiveText, activeRing, getMission } from "./missions.js";
+import { createMissionState, advanceMission, objectiveText, activeRing, getMission, ringCountText } from "./missions.js";
 import { buildRings } from "./world/rings.js";
 import { createScreens } from "./hud/screens.js";
 import { RUNWAYS } from "./world/terrain.js";
@@ -121,9 +121,11 @@ function tick() {
   if (c.hintToggle) hintForced = true;
 
   let landing = null;
+  let prevPos = null;
   if (!paused && phase === "FLYING") {
     const sinkBefore = -state.verticalSpeed;
     const groundBefore = groundHeightAt(state.x, state.z);
+    prevPos = { x: state.x, y: state.y, z: state.z };
     const flightC = {
       pitch: c.pitch,
       roll: c.roll,
@@ -159,7 +161,8 @@ function tick() {
   hintEl.classList.toggle("show", showHint);
 
   const agl = state.y - 1.6 - groundHeightAt(state.x, state.z);
-  advanceMission(missionState, state, agl, landing !== null, landing);
+  advanceMission(missionState, state, agl, landing !== null, landing, prevPos);
+  hud.setRingCount(ringCountText(missionState));
   const activeRingIndex = missionState.phase === "RINGS" ? missionState.ringIndex : (missionState.phase === "TAKEOFF" ? 0 : -1);
   rings.update(activeRingIndex, elapsed);
   hud.setObjective(objectiveText(missionState));

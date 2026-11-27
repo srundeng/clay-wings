@@ -15,6 +15,26 @@ export const MISSIONS = [
   },
 ];
 
+// Swept segment-versus-disc test: closest approach of the flight segment to
+// the ring centre, with a tolerance multiplier. Works from either direction.
+
+export function segmentDistance(a, b, p) {
+  if (!a) return Math.hypot(p.x - b.x, p.y - b.y, p.z - b.z);
+  const abx = b.x - a.x, aby = b.y - a.y, abz = b.z - a.z;
+  const apx = p.x - a.x, apy = p.y - a.y, apz = p.z - a.z;
+  const len2 = abx * abx + aby * aby + abz * abz;
+  const t = len2 > 0 ? Math.max(0, Math.min(1, (apx * abx + apy * aby + apz * abz) / len2)) : 0;
+  return Math.hypot(a.x + abx * t - p.x, a.y + aby * t - p.y, a.z + abz * t - p.z);
+}
+
+export function crossedRing(prev, cur, ring, tolerance = 1.15) {
+  return segmentDistance(prev, cur, ring) <= ring.r * tolerance;
+}
+
+export function ringCountText(progress) {
+  return progress.ringIndex + "/" + getMission(progress.id).rings.length;
+}
+
 export function getMission(id) {
   return MISSIONS.find((m) => m.id === id) || MISSIONS[0];
 }
@@ -47,7 +67,7 @@ export function activeRing(progress) {
   return getMission(progress.id).rings[progress.ringIndex] || null;
 }
 
-export function advanceMission(progress, state, agl, justLanded, landing) {
+export function advanceMission(progress, state, agl, justLanded, landing, prev) {
   progress.lastEvent = null;
   const mission = getMission(progress.id);
   if (progress.complete || progress.failed) return progress;
@@ -62,13 +82,10 @@ export function advanceMission(progress, state, agl, justLanded, landing) {
 
   if (progress.phase === "RINGS") {
     const ring = mission.rings[progress.ringIndex];
-    if (ring && Math.hypot(state.x - ring.x, state.z - ring.z) < ring.r && Math.abs(state.y - ring.y) < ring.r) {
+    if (ring && crossedRing(prev, state, ring)) {
       progress.ringIndex += 1;
       progress.lastEvent = "ring";
-      if (progress.ringIndex >= mission.rings.length) {
-        progress.phase = "LAND";
-        progress.lastEvent = "land";
-      }
+      if (progress.ringIndex >= mission.rings.length) progress.phase = "LAND";
     }
     return progress;
   }

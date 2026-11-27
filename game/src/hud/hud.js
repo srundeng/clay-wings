@@ -47,6 +47,12 @@ export function createHud(doc) {
   objective.textContent = "Take off, then land on the runway";
   el.appendChild(objective);
 
+  const rings = doc.createElement("div");
+  rings.id = "hud-rings";
+  rings.className = "hud-rings";
+  rings.textContent = "0/5";
+  el.appendChild(rings);
+
   const target = doc.createElement("div");
   target.id = "hud-target";
   target.innerHTML = '<div id="hud-arrow">&#9650;</div><div id="hud-target-dist"></div>';
@@ -86,6 +92,9 @@ export function createHud(doc) {
       if (!state.onGround && state.speed < FLIGHT.stallSpeed) warnings.push("STALL");
       warning.textContent = warnings.join("  ");
       this.renderCompass(hdg);
+    },
+    setRingCount(text) {
+      document.getElementById("hud-rings").textContent = text;
     },
     setObjective(text) {
       document.getElementById("hud-objective").textContent = text;
