@@ -1,5 +1,6 @@
 import * as THREE from "three";
 import { createFlightState, stepFlight } from "./flight-model.js";
+import { STOP_MOTION } from "./config.js";
 import { createInput } from "./input.js";
 import { createHud } from "./hud/hud.js";
 import { assembleScene } from "./render/scene.js";
@@ -72,6 +73,8 @@ const startedAt = performance.now();
 let frames = 0;
 let elapsed = 0;
 let propAngle = 0;
+let quantizedTime = 0;
+let qSteps = 0;
 let paused = false;
 let cameraMode = shotMode === "cockpit" ? 1 : 0;
 if (isShotScene) {
@@ -154,8 +157,16 @@ function tick() {
       if (crashed(state)) setPhase("CRASH", { detail: landing.text });
     }
     prevOnGround = state.onGround;
-    propAngle += (6 + state.throttle * 60) * dt;
     elapsed += dt;
+    const q = Math.floor(elapsed * STOP_MOTION.fps) / STOP_MOTION.fps;
+    if (q !== quantizedTime) {
+      quantizedTime = q;
+      qSteps += 1;
+      propAngle = q * (6 + state.throttle * 60);
+      world.sky.updateClouds(q);
+      world.water.userData.updateWaves(q);
+      world.props.userData.update(q);
+    }
   }
 
   const showHint = !isShotScene && (paused || hintForced || (!paused && performance.now() - startedAt < 10000));
@@ -234,7 +245,7 @@ function tick() {
   }
   if (paused) hud.el.classList.add("paused"); else hud.el.classList.remove("paused");
 
-  window.__DEBUG__ = { controls: c, state: state, cameraMode: cameraMode, cockpit: cockpitMode, exteriorVisible: air.visible, near: camera.near, fov: camera.fov, hintShown: showHint, cloud: world.sky.cloudMat.color.getHex(), cloudEmissive: world.sky.cloudMat.emissiveIntensity, cloudInfo: world.sky.cloudInfo, hemiGround: world.sky.hemi.groundColor.getHex(), phase: phase, mission: { phase: missionState.phase, ringIndex: missionState.ringIndex, complete: missionState.complete, failed: missionState.failed, stars: missionState.stars }, landing: landingText, clayInfo: world.clayInfo, skyInfo: world.skyInfo, ringInfo: rings.info, runwayInfo: world.runwayInfo, ringStates: rings.stateInfo, lampPosts: !!scene.getObjectByName("lamp-posts"), restarts: restarts, keys: Array.from(input.keys), agl: agl, calls: renderer.info.render.calls };
+  window.__DEBUG__ = { controls: c, state: state, cameraMode: cameraMode, cockpit: cockpitMode, exteriorVisible: air.visible, near: camera.near, fov: camera.fov, hintShown: showHint, cloud: world.sky.cloudMat.color.getHex(), cloudEmissive: world.sky.cloudMat.emissiveIntensity, cloudInfo: world.sky.cloudInfo, hemiGround: world.sky.hemi.groundColor.getHex(), phase: phase, mission: { phase: missionState.phase, ringIndex: missionState.ringIndex, complete: missionState.complete, failed: missionState.failed, stars: missionState.stars }, landing: landingText, clayInfo: world.clayInfo, skyInfo: world.skyInfo, stopMotion: { fps: STOP_MOTION.fps, steps: qSteps, time: quantizedTime, propAngle: propAngle }, ringInfo: rings.info, runwayInfo: world.runwayInfo, ringStates: rings.stateInfo, lampPosts: !!scene.getObjectByName("lamp-posts"), restarts: restarts, keys: Array.from(input.keys), agl: agl, calls: renderer.info.render.calls };
 
   renderer.render(scene, camera);
   frames += 1;

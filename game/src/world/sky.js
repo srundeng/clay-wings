@@ -87,6 +87,9 @@ export function buildSky(THREE, scene, doc) {
   return {
     sun, clouds, cloudMat, hemi, sunDisc,
     info: { fog: scene.fog.color.getHex(), hemiSky: hemi.color.getHex(), hemiGround: hemi.groundColor.getHex(), sun: sun.color.getHex(), disc: sunDisc.material.color.getHex(), shadowSize: sun.shadow.mapSize.x },
+    updateClouds(t) {
+      clouds.rotation.y = t * 0.0006;
+    },
     updateSun(x, y, z) {
       sun.position.set(x + 300, y + 180, z + 200);
       sun.target.position.set(x, y, z);

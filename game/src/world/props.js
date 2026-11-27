@@ -132,5 +132,8 @@ export function buildProps(THREE, mat, random) {
   planks.instanceMatrix.needsUpdate = true;
   group.add(planks);
 
+  group.userData.update = (t) => {
+    frond.rotation.z = Math.sin(t * 0.5) * 0.012;
+  };
   return group;
 }
