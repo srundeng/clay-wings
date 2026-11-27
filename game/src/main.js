@@ -2,108 +2,26 @@ import * as THREE from "three";
 import { createFlightState, stepFlight } from "./flight-model.js";
 import { createInput } from "./input.js";
 import { createHud } from "./hud/hud.js";
+import { assembleScene } from "./render/scene.js";
 
 const canvas = document.getElementById("game");
-const renderer = new THREE.WebGLRenderer({ canvas, antialias: true });
+const renderer = new THREE.WebGLRenderer({ canvas, antialias: true, preserveDrawingBuffer: true });
 renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
 renderer.setSize(window.innerWidth, window.innerHeight);
 renderer.shadowMap.enabled = true;
 
 const scene = new THREE.Scene();
-const sky = new THREE.Color(1.0, 0.72, 0.62);
-scene.background = sky;
-scene.fog = new THREE.Fog(sky, 60, 240);
+const camera = new THREE.PerspectiveCamera(60, window.innerWidth / window.innerHeight, 0.1, 4000);
+camera.position.set(0, 20, -20);
 
-const camera = new THREE.PerspectiveCamera(60, window.innerWidth / window.innerHeight, 0.1, 400);
-camera.position.set(0, 6, -14);
+const seedParam = new URLSearchParams(location.search).get("seed");
+const seed = Number(seedParam) || 7;
+const shotMode = new URLSearchParams(location.search).get("shot") || "play";
+const world = assembleScene(THREE, scene, document, seed);
+const groundHeightAt = world.groundHeightAt;
 
-scene.add(new THREE.HemisphereLight(0xffd9c0, 0x6a4a48, 0.9));
-const sun = new THREE.DirectionalLight(0xffeecc, 2.0);
-sun.position.set(40, 60, 20);
-sun.castShadow = true;
-sun.shadow.mapSize.set(1024, 1024);
-scene.add(sun);
-
-// END_OF_HEAD
-
-function makeClayMat(color, bumpTex) {
-  return new THREE.MeshStandardMaterial({ color, roughness: 0.82, metalness: 0.02, bumpMap: bumpTex, bumpScale: 0.03 });
-}
-
-function clayBump(size) {
-  const c = document.createElement("canvas");
-  c.width = c.height = size;
-  const ctx = c.getContext("2d");
-  ctx.fillStyle = "rgb(140,140,140)";
-  ctx.fillRect(0, 0, size, size);
-  for (let y = 0; y < size; y += 5) {
-    for (let x = 0; x < size; x += 5) {
-      const shade = 110 + Math.random() * 60;
-      ctx.fillStyle = "rgb(" + shade + "," + shade + "," + shade + ")";
-      ctx.beginPath();
-      ctx.arc(x + 2, y + 2, 1.5 + Math.random() * 2, 0, Math.PI * 2);
-      ctx.fill();
-    }
-  }
-  const tex = new THREE.CanvasTexture(c);
-  tex.wrapS = tex.wrapT = THREE.RepeatWrapping;
-  tex.repeat.set(8, 8);
-  return tex;
-}
-
-// END_BUILD
-
-const clayTex = clayBump(128);
-
-const ground = new THREE.Mesh(new THREE.PlaneGeometry(2000, 2000), makeClayMat(0x5f8a4a, clayTex));
-ground.rotation.x = -Math.PI / 2;
-ground.receiveShadow = true;
-scene.add(ground);
-
-const runway = new THREE.Mesh(new THREE.PlaneGeometry(14, 500), makeClayMat(0x8a8f7c, clayTex));
-runway.rotation.x = -Math.PI / 2;
-runway.position.set(0, 0.02, 150);
-runway.receiveShadow = true;
-scene.add(runway);
-
-const dashMat = makeClayMat(0xf0e6cf, clayTex);
-for (let i = 0; i < 14; i += 1) {
-  const dash = new THREE.Mesh(new THREE.PlaneGeometry(0.6, 8), dashMat);
-  dash.rotation.x = -Math.PI / 2;
-  dash.position.set(0, 0.04, -20 + i * 22);
-  scene.add(dash);
-}
-
-// placeholder clay plane
-const plane = new THREE.Group();
-const fusMat = makeClayMat(0xe4633d, clayTex);
-const wingMat = makeClayMat(0xf0c96a, clayTex);
-const body = new THREE.Mesh(new THREE.CapsuleGeometry(0.45, 1.6, 6, 12), fusMat);
-body.rotation.x = Math.PI / 2;
-body.castShadow = true;
-plane.add(body);
-const nose = new THREE.Mesh(new THREE.ConeGeometry(0.45, 0.8, 12), fusMat);
-nose.rotation.x = Math.PI / 2;
-nose.position.z = 1.5;
-plane.add(nose);
-const wing = new THREE.Mesh(new THREE.BoxGeometry(3.4, 0.12, 0.8), wingMat);
-wing.position.z = 0.15;
-wing.castShadow = true;
-plane.add(wing);
-const tailW = new THREE.Mesh(new THREE.BoxGeometry(1.2, 0.1, 0.5), wingMat);
-tailW.position.set(0, 0.1, -1.05);
-plane.add(tailW);
-const fin = new THREE.Mesh(new THREE.BoxGeometry(0.1, 0.55, 0.5), wingMat);
-fin.position.set(0, 0.3, -1.05);
-plane.add(fin);
-const prop = new THREE.Mesh(new THREE.BoxGeometry(0.9, 0.08, 0.04), makeClayMat(0x333333, clayTex));
-prop.position.z = 1.95;
-plane.add(prop);
-scene.add(plane);
-
-// END_WORLD
-
-const state = createFlightState({ y: 1.6 });
+const startY = groundHeightAt(0, 0) + 1.6;
+const state = createFlightState({ x: 0, y: startY, z: 0, heading: 0 });
 const input = createInput(window);
 const hud = createHud(document);
 
@@ -125,15 +43,14 @@ let frames = 0;
 let elapsed = 0;
 let propAngle = 0;
 let paused = false;
-let cameraMode = 0; // 0 chase, 1 cockpit
+let cameraMode = 0;
 let restarts = 0;
 let hintForced = false;
-const camPos = new THREE.Vector3(0, 6, -14);
-const camLook = new THREE.Vector3(0, 2, 0);
+const camPos = new THREE.Vector3(state.x, state.y + 8, state.z - 16);
+const camLook = new THREE.Vector3(state.x, state.y, state.z);
 
 function resetMission() {
-  const fresh = createFlightState({ y: 1.6 });
-  Object.assign(state, fresh);
+  Object.assign(state, createFlightState({ x: 0, y: groundHeightAt(0, 0) + 1.6, z: 0, heading: 0 }));
   restarts += 1;
 }
 
@@ -154,9 +71,8 @@ function tick() {
       throttleDelta: (c.throttleUp ? 1 : 0) - (c.throttleDown ? 1 : 0),
       brake: c.brake,
     };
-    stepFlight(state, flightC, dt, function () { return 0; });
+    stepFlight(state, flightC, dt, groundHeightAt);
     if (c.gearToggle) state.gearDown = !state.gearDown;
-    // Stability assist: airborne, no pitch/roll input, assist on.
     if (!state.onGround && c.assist && c.pitch === 0 && c.roll === 0) {
       state.roll *= Math.max(0, 1 - 2 * dt);
       const lvl = 0.5 * dt;
@@ -167,38 +83,56 @@ function tick() {
     elapsed += dt;
   }
 
-  // Controls hint: first 10 seconds, when forced with H, and on the pause screen.
   hintEl.classList.toggle("show", paused || hintForced || (!paused && elapsed < 10));
 
-  plane.position.set(state.x, state.y, state.z);
-  plane.rotation.order = "YXZ";
-  plane.rotation.y = state.heading;
-  plane.rotation.x = -state.pitch;
-  plane.rotation.z = state.roll;
-  prop.rotation.z = propAngle;
+  const agl = state.y - 1.6 - groundHeightAt(state.x, state.z);
+  const air = world.aircraft;
+  air.position.set(state.x, state.y - 0.5, state.z);
+  air.rotation.order = "YXZ";
+  air.rotation.y = state.heading;
+  air.rotation.x = -state.pitch;
+  air.rotation.z = state.roll;
+  world.prop.rotation.z = propAngle;
+  world.wheels.visible = state.gearDown;
 
-  if (cameraMode === 0) {
-    const back = 13;
-    const up = 4.5;
+  if (shotMode === "start") {
+    camera.position.set(0, 120, -800);
+    camera.lookAt(0, 25, -150);
+  } else if (shotMode === "end") {
+    camera.position.set(
+      state.x - Math.sin(state.heading) * 72,
+      state.y + 34,
+      state.z - Math.cos(state.heading) * 72,
+    );
+    camera.lookAt(state.x, state.y + 2, state.z);
+  } else if (cameraMode === 0) {
+    const back = 16;
+    const up = 6;
     const desired = new THREE.Vector3(
       state.x - Math.sin(state.heading) * Math.cos(state.pitch) * back,
       state.y + up - Math.sin(state.pitch) * back,
       state.z - Math.cos(state.heading) * Math.cos(state.pitch) * back,
     );
-    camPos.lerp(desired, 1 - Math.pow(0.001, dt));
+    camPos.lerp(desired, 1 - Math.pow(0.0015, dt));
+    const floor = groundHeightAt(camPos.x, camPos.z) + 3;
+    if (camPos.y < floor) camPos.y = floor;
     camera.position.copy(camPos);
     const look = new THREE.Vector3(state.x, state.y + 1, state.z);
-    camLook.lerp(look, 1 - Math.pow(0.0001, dt));
+    camLook.lerp(look, 1 - Math.pow(0.0002, dt));
     camera.lookAt(camLook);
   } else {
-    camera.position.set(state.x, state.y + 1.1, state.z);
-    camera.lookAt(state.x + Math.sin(state.heading), state.y + 1.1 - Math.sin(state.pitch) * 5, state.z + Math.cos(state.heading));
+    camera.position.set(state.x, state.y + 0.6, state.z);
+    camera.lookAt(
+      state.x + Math.sin(state.heading) * 6,
+      state.y + 0.6 - Math.sin(state.pitch) * 6,
+      state.z + Math.cos(state.heading) * 6,
+    );
   }
 
-  hud.update(state);
+  hud.update(state, agl);
   if (paused) hud.el.classList.add("paused"); else hud.el.classList.remove("paused");
 
-  window.__DEBUG__ = { controls: c, state: state, cameraMode: cameraMode, restarts: restarts, keys: Array.from(input.keys) };
+  window.__DEBUG__ = { controls: c, state: state, cameraMode: cameraMode, restarts: restarts, keys: Array.from(input.keys), agl: agl, calls: renderer.info.render.calls };
 
   renderer.render(scene, camera);
   frames += 1;

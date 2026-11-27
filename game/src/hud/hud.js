@@ -50,11 +50,12 @@ export function createHud(doc) {
   hull.parentNode;
   return {
     el,
-    update(state) {
+    update(state, agl) {
       const deg = state.heading * 180 / Math.PI;
       const hdg = ((Math.round(deg) % 360) + 360) % 360;
+      const alt = Math.max(0, Math.round(agl !== undefined ? agl : state.y));
       document.getElementById("hud-speed").textContent = Math.round(state.speed * 3.6).toString();
-      document.getElementById("hud-alt").textContent = Math.round(state.y).toString();
+      document.getElementById("hud-alt").textContent = alt.toString();
       document.getElementById("hud-heading").textContent = hdg;
       document.getElementById("hud-vsi").textContent = state.onGround ? "0" : state.verticalSpeed.toFixed(0);
       document.getElementById("hud-throttle").textContent = Math.round(state.throttle * 100).toString();
