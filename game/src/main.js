@@ -3,6 +3,7 @@ import { createFlightState, stepFlight } from "./flight-model.js";
 import { createInput } from "./input.js";
 import { createHud } from "./hud/hud.js";
 import { assembleScene } from "./render/scene.js";
+import { buildCockpit } from "./render/cockpit.js";
 
 const canvas = document.getElementById("game");
 const renderer = new THREE.WebGLRenderer({ canvas, antialias: true, preserveDrawingBuffer: true });
@@ -13,11 +14,14 @@ renderer.shadowMap.enabled = true;
 const scene = new THREE.Scene();
 const camera = new THREE.PerspectiveCamera(60, window.innerWidth / window.innerHeight, 0.1, 4000);
 camera.position.set(0, 20, -20);
+camera.near = 0.1;
+scene.add(camera);
 
 const seedParam = new URLSearchParams(location.search).get("seed");
 const seed = Number(seedParam) || 7;
 const shotMode = new URLSearchParams(location.search).get("shot") || "play";
 const world = assembleScene(THREE, scene, document, seed);
+const cockpit = buildCockpit(THREE, document, camera);
 const groundHeightAt = world.groundHeightAt;
 
 const startY = groundHeightAt(0, 0) + 1.6;
@@ -43,11 +47,13 @@ let frames = 0;
 let elapsed = 0;
 let propAngle = 0;
 let paused = false;
-let cameraMode = 0;
+let cameraMode = shotMode === "cockpit" ? 1 : 0;
 let restarts = 0;
 let hintForced = false;
 const camPos = new THREE.Vector3(state.x, state.y + 8, state.z - 16);
 const camLook = new THREE.Vector3(state.x, state.y, state.z);
+const EYE = new THREE.Vector3(0, 0.55, 0.3);
+const COCKPIT_YAW = new THREE.Quaternion().setFromAxisAngle(new THREE.Vector3(0, 1, 0), Math.PI);
 
 function resetMission() {
   Object.assign(state, createFlightState({ x: 0, y: groundHeightAt(0, 0) + 1.6, z: 0, heading: 0 }));
@@ -94,6 +100,9 @@ function tick() {
   air.rotation.z = state.roll;
   world.prop.rotation.z = propAngle;
   world.wheels.visible = state.gearDown;
+  const cockpitMode = cameraMode === 1;
+  air.visible = !cockpitMode;
+  cockpit.group.visible = cockpitMode;
 
   if (shotMode === "start") {
     camera.position.set(0, 120, -800);
@@ -121,18 +130,16 @@ function tick() {
     camLook.lerp(look, 1 - Math.pow(0.0002, dt));
     camera.lookAt(camLook);
   } else {
-    camera.position.set(state.x, state.y + 0.6, state.z);
-    camera.lookAt(
-      state.x + Math.sin(state.heading) * 6,
-      state.y + 0.6 - Math.sin(state.pitch) * 6,
-      state.z + Math.cos(state.heading) * 6,
-    );
+    air.updateMatrixWorld(true);
+    camera.position.copy(EYE).applyMatrix4(air.matrixWorld);
+    camera.quaternion.copy(air.quaternion).multiply(COCKPIT_YAW);
   }
 
   hud.update(state, agl);
+  if (cockpitMode) cockpit.update(state, agl);
   if (paused) hud.el.classList.add("paused"); else hud.el.classList.remove("paused");
 
-  window.__DEBUG__ = { controls: c, state: state, cameraMode: cameraMode, restarts: restarts, keys: Array.from(input.keys), agl: agl, calls: renderer.info.render.calls };
+  window.__DEBUG__ = { controls: c, state: state, cameraMode: cameraMode, cockpit: cockpitMode, exteriorVisible: air.visible, near: camera.near, restarts: restarts, keys: Array.from(input.keys), agl: agl, calls: renderer.info.render.calls };
 
   renderer.render(scene, camera);
   frames += 1;

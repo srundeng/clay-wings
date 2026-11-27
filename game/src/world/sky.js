@@ -1,8 +1,27 @@
 // Sunset sky helpers: sun light + cotton-ball clouds as instanced spheres.
 
-export function buildSky(THREE, scene) {
+export function buildSky(THREE, scene, doc) {
   scene.background = new THREE.Color(0xffb98a);
   scene.fog = new THREE.Fog(new THREE.Color(0xffc6a0), 400, 1500);
+
+  const domeCanvas = doc.createElement("canvas");
+  domeCanvas.width = 4;
+  domeCanvas.height = 256;
+  const g = domeCanvas.getContext("2d");
+  const grad = g.createLinearGradient(0, 0, 0, 256);
+  grad.addColorStop(0, "#6f3a86");
+  grad.addColorStop(0.34, "#c05f88");
+  grad.addColorStop(0.58, "#f28a6b");
+  grad.addColorStop(0.74, "#ffc48c");
+  grad.addColorStop(1, "#8f6270");
+  g.fillStyle = grad;
+  g.fillRect(0, 0, 4, 256);
+  const dome = new THREE.Mesh(
+    new THREE.SphereGeometry(1800, 32, 16),
+    new THREE.MeshBasicMaterial({ map: new THREE.CanvasTexture(domeCanvas), side: THREE.BackSide, depthWrite: false, fog: false }),
+  );
+  dome.name = "sky-dome";
+  scene.add(dome);
 
   scene.add(new THREE.HemisphereLight(0xffe0c0, 0x5a4a48, 0.85));
   const sun = new THREE.DirectionalLight(0xfff0d0, 2.1);
